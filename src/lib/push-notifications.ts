@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
+const VAPID_PUBLIC_KEY = "BKbIshU-vonOtfVoQTPlhHRwXvaGFRhy-s3bqhisX8BA7ar2ee9LM8FEfKsqt3qx9oZ4hW989oxbX8eZj2OQ3c8";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -51,7 +51,7 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
     const subJson = subscription.toJSON();
 
     // Upsert subscription to Supabase
-    await supabase.from("push_subscriptions").upsert(
+    const { error } = await supabase.from("push_subscriptions").upsert(
       {
         user_id: userId,
         endpoint: subJson.endpoint,
@@ -60,6 +60,11 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
       },
       { onConflict: "user_id" }
     );
+
+    if (error) {
+      console.error("Failed to save push subscription:", error.message);
+      // Still return true since browser notifications will work
+    }
 
     return true;
   } catch (err) {
