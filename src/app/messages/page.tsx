@@ -680,6 +680,7 @@ function MessagesContent() {
   // Context menu handlers
   const openContextMenu = (msg: Message, x: number, y: number) => {
     if (msg.deleted_at) return;
+    window.getSelection()?.removeAllRanges();
     setContextMenu({ msg, x, y });
   };
 
@@ -691,9 +692,15 @@ function MessagesContent() {
 
   const handleDelete = async (msg: Message) => {
     setContextMenu(null);
-    const { error } = await deleteMessage(msg.id);
-    if (error) { toast.error("Failed to delete"); return; }
+    // Optimistic local update first
     setMessages((prev) => prev.map((m) => m.id === msg.id ? { ...m, deleted_at: new Date().toISOString(), content: "" } : m));
+    const { error } = await deleteMessage(msg.id);
+    if (error) {
+      toast.error("Failed to delete");
+      // Revert on failure
+      setMessages((prev) => prev.map((m) => m.id === msg.id ? { ...m, deleted_at: null, content: msg.content } : m));
+      return;
+    }
     fetchConversations();
   };
 
@@ -886,21 +893,28 @@ function MessagesContent() {
 
                 {/* Pinned messages banner */}
                 {pinnedMessages.length > 0 && (
-                  <div className="px-3 py-2 border-b bg-amber-50/80 dark:bg-amber-500/5 shrink-0">
-                    <div className="flex items-center gap-2 text-xs">
-                      <Pin className="h-3 w-3 text-amber-600 shrink-0" />
-                      <span className="font-medium text-amber-700 dark:text-amber-400 shrink-0">Pinned</span>
-                      <span className="truncate text-muted-foreground">
-                        {pinnedMessages[pinnedMessages.length - 1].type === "audio" ? "🎤 Voice note"
-                          : pinnedMessages[pinnedMessages.length - 1].type === "image" ? "📷 Photo"
-                          : pinnedMessages[pinnedMessages.length - 1].type === "document" ? "📄 Document"
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 w-full px-3 py-1.5 border-b bg-amber-50/80 dark:bg-amber-500/5 shrink-0 text-left hover:bg-amber-100/60 dark:hover:bg-amber-500/10 transition-colors"
+                    onClick={() => {
+                      const el = document.getElementById(`msg-${pinnedMessages[pinnedMessages.length - 1].id}`);
+                      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }}
+                  >
+                    <Pin className="h-3 w-3 text-amber-600 shrink-0" />
+                    <span className="text-xs font-medium text-amber-700 dark:text-amber-400 shrink-0">Pinned</span>
+                    <span className="text-xs truncate text-muted-foreground flex-1 min-w-0">
+                      {pinnedMessages[pinnedMessages.length - 1].type === "audio" ? "🎤 Voice note"
+                        : pinnedMessages[pinnedMessages.length - 1].type === "image" ? "📷 Photo"
+                        : pinnedMessages[pinnedMessages.length - 1].type === "document" ? "📄 Document"
+                        : pinnedMessages[pinnedMessages.length - 1].content.length > 40
+                          ? pinnedMessages[pinnedMessages.length - 1].content.slice(0, 40) + "..."
                           : pinnedMessages[pinnedMessages.length - 1].content}
-                      </span>
-                      {pinnedMessages.length > 1 && (
-                        <span className="text-muted-foreground shrink-0">+{pinnedMessages.length - 1}</span>
-                      )}
-                    </div>
-                  </div>
+                    </span>
+                    {pinnedMessages.length > 1 && (
+                      <span className="text-[10px] text-muted-foreground shrink-0">+{pinnedMessages.length - 1}</span>
+                    )}
+                  </button>
                 )}
 
                 {/* Messages */}
@@ -928,11 +942,15 @@ function MessagesContent() {
                     return (
                       <div
                         key={msg.id}
-                        className={`flex ${isMine ? "justify-end" : "justify-start"} ${showTail ? "mt-2.5" : "mt-[3px]"}`}
+                        id={`msg-${msg.id}`}
+                        className={`msg-bubble flex ${isMine ? "justify-end" : "justify-start"} ${showTail ? "mt-2.5" : "mt-[3px]"}`}
                         onContextMenu={(e) => { e.preventDefault(); openContextMenu(msg, e.clientX, e.clientY); }}
                         onTouchStart={(e) => {
                           const t = e.touches[0];
-                          longPressTimer.current = setTimeout(() => openContextMenu(msg, t.clientX, t.clientY), 500);
+                          longPressTimer.current = setTimeout(() => {
+                            openContextMenu(msg, t.clientX, t.clientY);
+                            if (navigator.vibrate) navigator.vibrate(30);
+                          }, 400);
                         }}
                         onTouchEnd={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
                         onTouchMove={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
@@ -1197,32 +1215,32 @@ function MessagesContent() {
       {/* Context menu */}
       {contextMenu && (
         <div
-          className="fixed inset-0 z-[90]"
+          className="fixed inset-0 z-[90] bg-black/20"
           onClick={() => setContextMenu(null)}
           onContextMenu={(e) => { e.preventDefault(); setContextMenu(null); }}
         >
           <div
-            className="absolute bg-white dark:bg-zinc-800 rounded-xl shadow-xl border dark:border-zinc-700 py-1.5 min-w-[160px] z-[91]"
+            className="absolute bg-white dark:bg-zinc-800 rounded-xl shadow-2xl border dark:border-zinc-700 py-1 min-w-[150px] z-[91] animate-in fade-in zoom-in-95 duration-150"
             style={{
-              left: Math.min(contextMenu.x, window.innerWidth - 180),
-              top: Math.min(contextMenu.y, window.innerHeight - 220),
+              left: `clamp(8px, ${contextMenu.x}px, calc(100vw - 168px))`,
+              top: `clamp(8px, ${contextMenu.y}px, calc(100vh - 200px))`,
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 text-left" onClick={() => handleReply(contextMenu.msg)}>
+            <button className="flex items-center gap-3 w-full px-3.5 py-2 text-[13px] hover:bg-gray-100 dark:hover:bg-zinc-700 text-left active:bg-gray-200 dark:active:bg-zinc-600" onClick={() => handleReply(contextMenu.msg)}>
               <Reply className="h-4 w-4 text-muted-foreground" /> Reply
             </button>
             {contextMenu.msg.type === "text" && (
-              <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 text-left" onClick={() => handleCopy(contextMenu.msg)}>
+              <button className="flex items-center gap-3 w-full px-3.5 py-2 text-[13px] hover:bg-gray-100 dark:hover:bg-zinc-700 text-left active:bg-gray-200 dark:active:bg-zinc-600" onClick={() => handleCopy(contextMenu.msg)}>
                 <Copy className="h-4 w-4 text-muted-foreground" /> Copy
               </button>
             )}
-            <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 text-left" onClick={() => handlePin(contextMenu.msg)}>
+            <button className="flex items-center gap-3 w-full px-3.5 py-2 text-[13px] hover:bg-gray-100 dark:hover:bg-zinc-700 text-left active:bg-gray-200 dark:active:bg-zinc-600" onClick={() => handlePin(contextMenu.msg)}>
               {contextMenu.msg.pinned ? <PinOff className="h-4 w-4 text-muted-foreground" /> : <Pin className="h-4 w-4 text-muted-foreground" />}
               {contextMenu.msg.pinned ? "Unpin" : "Pin"}
             </button>
             {contextMenu.msg.sender_id === user?.id && (
-              <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-red-50 dark:hover:bg-red-500/10 text-red-500 text-left" onClick={() => handleDelete(contextMenu.msg)}>
+              <button className="flex items-center gap-3 w-full px-3.5 py-2 text-[13px] hover:bg-red-50 dark:hover:bg-red-500/10 text-red-500 text-left active:bg-red-100 dark:active:bg-red-500/20" onClick={() => handleDelete(contextMenu.msg)}>
                 <Trash2 className="h-4 w-4" /> Delete
               </button>
             )}
