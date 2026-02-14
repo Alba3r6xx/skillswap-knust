@@ -733,7 +733,7 @@ function MessagesContent() {
   const selectedPeer = selectedPeerId ? peerProfiles[selectedPeerId] : null;
 
   return (
-    <div className="h-[calc(100dvh-3.5rem)] md:h-[calc(100dvh)] bg-gray-50 dark:bg-background flex flex-col overflow-hidden">
+    <div className="bg-gray-50 dark:bg-background flex flex-col overflow-hidden" style={{ height: 'calc(100dvh - 3.25rem - env(safe-area-inset-top))' }}>
       {/* Header - only show on conversation list view or desktop */}
       <div className={`${selectedPeerId ? "hidden md:block" : "block"} px-4 pt-4 pb-2 md:pt-6 md:pb-4 max-w-4xl mx-auto w-full`}>
         <h1 className="text-2xl font-bold">Messages</h1>
