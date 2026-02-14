@@ -20,6 +20,7 @@ import {
   CheckCheck,
   Mic,
   Square,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -69,6 +70,9 @@ function MessagesContent() {
   const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const [recording, setRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const [audioPreview, setAudioPreview] = useState<string | null>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioMime, setAudioMime] = useState("");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -213,56 +217,30 @@ function MessagesContent() {
     if (!user || !selectedPeerId) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-          ? "audio/webm;codecs=opus"
-          : "audio/mp4",
-      });
+      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : "audio/mp4";
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: mime });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
+      setAudioMime(mime);
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
 
-      mediaRecorder.onstop = async () => {
+      mediaRecorder.onstop = () => {
         stream.getTracks().forEach((t) => t.stop());
         if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-        setRecordingDuration(0);
 
-        const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
-        if (blob.size < 1000) return; // too short
-
-        setSending(true);
-        const ext = mediaRecorder.mimeType.includes("webm") ? "webm" : "m4a";
-        const fileName = `${user.id}/${Date.now()}.${ext}`;
-
-        const { error: uploadErr } = await supabase.storage
-          .from("audio-messages")
-          .upload(fileName, blob, { contentType: mediaRecorder.mimeType });
-
-        if (uploadErr) {
-          toast.error("Failed to upload voice note");
-          setSending(false);
+        const blob = new Blob(audioChunksRef.current, { type: mime });
+        if (blob.size < 500) {
+          setRecordingDuration(0);
           return;
         }
-
-        const { data: urlData } = supabase.storage
-          .from("audio-messages")
-          .getPublicUrl(fileName);
-
-        const { data: msgData } = await sendMessage({
-          sender_id: user.id,
-          receiver_id: selectedPeerId,
-          content: urlData.publicUrl,
-          type: "audio",
-        });
-
-        if (msgData) {
-          setMessages((prev) => [...prev, msgData]);
-          fetchConversations();
-        }
-        setSending(false);
+        const url = URL.createObjectURL(blob);
+        setAudioBlob(blob);
+        setAudioPreview(url);
       };
 
       mediaRecorder.start();
@@ -285,6 +263,48 @@ function MessagesContent() {
       clearInterval(recordingTimerRef.current);
       recordingTimerRef.current = null;
     }
+  };
+
+  const discardVoiceNote = () => {
+    if (audioPreview) URL.revokeObjectURL(audioPreview);
+    setAudioPreview(null);
+    setAudioBlob(null);
+    setRecordingDuration(0);
+  };
+
+  const sendVoiceNote = async () => {
+    if (!audioBlob || !user || !selectedPeerId || sending) return;
+    setSending(true);
+    const ext = audioMime.includes("webm") ? "webm" : "m4a";
+    const fileName = `${user.id}/${Date.now()}.${ext}`;
+
+    const { error: uploadErr } = await supabase.storage
+      .from("audio-messages")
+      .upload(fileName, audioBlob, { contentType: audioMime });
+
+    if (uploadErr) {
+      toast.error("Failed to upload voice note");
+      setSending(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("audio-messages")
+      .getPublicUrl(fileName);
+
+    const { data: msgData } = await sendMessage({
+      sender_id: user.id,
+      receiver_id: selectedPeerId,
+      content: urlData.publicUrl,
+      type: "audio",
+    });
+
+    if (msgData) {
+      setMessages((prev) => [...prev, msgData]);
+      fetchConversations();
+    }
+    discardVoiceNote();
+    setSending(false);
   };
 
   if (isLoading || !user) {
@@ -491,13 +511,46 @@ function MessagesContent() {
 
                 {/* Input */}
                 <div className="p-3 border-t shrink-0 bg-background">
-                  {recording ? (
+                  {audioPreview ? (
+                    /* Voice note preview — listen before sending */
+                    <div className="flex items-center gap-2">
+                      <audio controls src={audioPreview} className="flex-1 h-10" />
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="shrink-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                        onClick={discardVoiceNote}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        disabled={sending}
+                        className="bg-amber-500 hover:bg-amber-600 text-white shrink-0"
+                        onClick={sendVoiceNote}
+                      >
+                        {sending ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  ) : recording ? (
+                    /* Recording in progress */
                     <div className="flex items-center gap-3">
-                      <span className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />
-                      <span className="text-sm font-medium text-red-500">
+                      <span className="h-3 w-3 rounded-full bg-red-500 animate-pulse shrink-0" />
+                      <span className="text-sm font-medium text-red-500 tabular-nums">
                         {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, "0")}
                       </span>
-                      <span className="text-xs text-muted-foreground flex-1">Recording...</span>
+                      <div className="flex-1 flex items-center gap-1">
+                        {Array.from({ length: 20 }).map((_, i) => (
+                          <span
+                            key={i}
+                            className="w-1 bg-red-400 rounded-full animate-pulse"
+                            style={{
+                              height: `${8 + Math.random() * 16}px`,
+                              animationDelay: `${i * 0.05}s`,
+                            }}
+                          />
+                        ))}
+                      </div>
                       <Button
                         size="icon"
                         variant="destructive"
@@ -508,6 +561,7 @@ function MessagesContent() {
                       </Button>
                     </div>
                   ) : (
+                    /* Normal text input */
                     <form
                       onSubmit={(e) => { e.preventDefault(); handleSend(); }}
                       className="flex gap-2"
