@@ -9,7 +9,7 @@ import { Message, Profile } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+// Input replaced with native <input> for iOS keyboard compatibility
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -47,71 +47,115 @@ function ReadReceipt({ msg, isMine }: { msg: Message; isMine: boolean }) {
 function VoiceMessage({ src, isMine }: { src: string; isMine: boolean }) {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [dur, setDur] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const barsRef = useRef<HTMLDivElement>(null);
 
   const toggle = () => {
     const a = audioRef.current;
     if (!a) return;
-    if (playing) { a.pause(); } else { a.play(); }
-    setPlaying(!playing);
+    if (playing) { a.pause(); } else { a.play().catch(() => {}); }
   };
 
-  const formatTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m}:${sec.toString().padStart(2, "0")}`;
+  const fmt = (s: number) => {
+    if (!s || !isFinite(s) || isNaN(s)) return "0:00";
+    return `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
   };
 
-  // Generate deterministic waveform from URL hash
-  const bars = Array.from({ length: 28 }, (_, i) => {
-    const hash = (src.charCodeAt((i * 7) % src.length) * 31 + i * 13) % 100;
-    return 6 + (hash / 100) * 22;
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const a = audioRef.current;
+    const el = barsRef.current;
+    if (!a || !el || !dur || !isFinite(dur)) return;
+    const rect = el.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    a.currentTime = pct * dur;
+    setProgress(pct * 100);
+  };
+
+  // Generate deterministic waveform bars — more variation like WhatsApp
+  const bars = Array.from({ length: 40 }, (_, i) => {
+    const s = src.length > 10 ? src : src + "padding123";
+    const c1 = s.charCodeAt((i * 3) % s.length);
+    const c2 = s.charCodeAt((i * 7 + 5) % s.length);
+    const c3 = s.charCodeAt((i * 11 + 3) % s.length);
+    const hash = ((c1 * 31 + c2 * 17 + c3 * 13 + i * 7) % 100) / 100;
+    return 3 + hash * 20;
   });
 
   return (
-    <div className="flex items-center gap-2.5 min-w-[200px]">
+    <div className="flex items-center gap-3 min-w-[220px] max-w-[280px]">
       <audio
         ref={audioRef}
         src={src}
         preload="metadata"
-        onLoadedMetadata={() => { if (audioRef.current) setDuration(audioRef.current.duration); }}
-        onTimeUpdate={() => {
-          if (audioRef.current && duration > 0) setProgress((audioRef.current.currentTime / duration) * 100);
+        onLoadedMetadata={() => {
+          const a = audioRef.current;
+          if (a && isFinite(a.duration) && a.duration > 0) setDur(a.duration);
         }}
-        onEnded={() => { setPlaying(false); setProgress(0); }}
+        onDurationChange={() => {
+          const a = audioRef.current;
+          if (a && isFinite(a.duration) && a.duration > 0) setDur(a.duration);
+        }}
+        onTimeUpdate={() => {
+          const a = audioRef.current;
+          if (!a) return;
+          setCurrentTime(a.currentTime);
+          if (dur > 0 && isFinite(dur)) setProgress((a.currentTime / dur) * 100);
+        }}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => { setPlaying(false); setProgress(0); setCurrentTime(0); }}
       />
+      {/* Play/Pause */}
       <button
         onClick={toggle}
-        className={`h-9 w-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-          isMine ? "bg-white/20 hover:bg-white/30" : "bg-amber-500 hover:bg-amber-600"
+        className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 transition-all active:scale-95 ${
+          isMine
+            ? "bg-white/20 hover:bg-white/30 backdrop-blur-sm"
+            : "bg-amber-500 hover:bg-amber-600 shadow-sm"
         }`}
       >
         {playing
-          ? <Pause className={`h-4 w-4 ${isMine ? "text-white" : "text-white"}`} />
-          : <Play className={`h-4 w-4 ml-0.5 ${isMine ? "text-white" : "text-white"}`} />
+          ? <Pause className="h-4.5 w-4.5 text-white" fill="white" />
+          : <Play className="h-4.5 w-4.5 ml-0.5 text-white" fill="white" />
         }
       </button>
+      {/* Waveform + time */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-end gap-[1.5px] h-6">
+        <div
+          ref={barsRef}
+          className="flex items-center gap-[1px] h-7 cursor-pointer relative"
+          onClick={handleSeek}
+        >
           {bars.map((h, i) => {
-            const filled = progress > (i / bars.length) * 100;
+            const pct = (i / bars.length) * 100;
+            const filled = progress > pct;
             return (
               <span
                 key={i}
-                className={`w-[2.5px] rounded-full transition-colors duration-150 ${
+                className={`w-[2px] rounded-full transition-all duration-100 ${
                   filled
                     ? isMine ? "bg-white" : "bg-amber-500"
-                    : isMine ? "bg-white/30" : "bg-gray-300 dark:bg-gray-600"
+                    : isMine ? "bg-white/25" : "bg-gray-300 dark:bg-zinc-600"
                 }`}
                 style={{ height: `${h}px` }}
               />
             );
           })}
+          {/* Seek dot */}
+          <span
+            className={`absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full shadow-md transition-all duration-100 ${
+              isMine ? "bg-white" : "bg-amber-500"
+            }`}
+            style={{ left: `${Math.min(progress, 98)}%` }}
+          />
         </div>
-        <span className={`text-[10px] mt-0.5 block ${isMine ? "text-amber-100" : "text-muted-foreground"}`}>
-          {playing ? formatTime((audioRef.current?.currentTime || 0)) : formatTime(duration || 0)}
-        </span>
+        <div className="flex items-center justify-between mt-0.5">
+          <span className={`text-[10px] tabular-nums ${isMine ? "text-white/70" : "text-muted-foreground"}`}>
+            {playing ? fmt(currentTime) : fmt(dur)}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -584,143 +628,150 @@ function MessagesContent() {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto px-3 py-4 min-h-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMC41IiBmaWxsPSIjZTVlN2ViIiBvcGFjaXR5PSIwLjMiLz48L3N2Zz4=')] dark:bg-none">
+                <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-3 min-h-0 bg-amber-50/30 dark:bg-zinc-950/50">
                   {messages.length === 0 && (
-                    <div className="text-center py-16">
-                      <div className="h-16 w-16 mx-auto mb-4 rounded-full bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center">
-                        <MessageSquare className="h-7 w-7 text-amber-400" />
+                    <div className="text-center py-20">
+                      <div className="h-14 w-14 mx-auto mb-3 rounded-full bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center">
+                        <MessageSquare className="h-6 w-6 text-amber-500" />
                       </div>
                       <p className="text-sm font-medium text-muted-foreground">No messages yet</p>
-                      <p className="text-xs text-muted-foreground/60 mt-1">Say hello to start the conversation</p>
+                      <p className="text-xs text-muted-foreground/50 mt-1">Say hello to start the conversation</p>
                     </div>
                   )}
-                  <div className="space-y-1">
-                    {messages.map((msg, idx) => {
-                      const isMine = msg.sender_id === user.id;
-                      const prevMsg = idx > 0 ? messages[idx - 1] : null;
-                      const sameSender = prevMsg?.sender_id === msg.sender_id;
-                      const isAudio = msg.type === "audio";
+                  {messages.map((msg, idx) => {
+                    const isMine = msg.sender_id === user.id;
+                    const prevMsg = idx > 0 ? messages[idx - 1] : null;
+                    const sameSender = prevMsg?.sender_id === msg.sender_id;
+                    const isAudio = msg.type === "audio";
+                    const showTail = !sameSender;
 
-                      return (
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`flex ${isMine ? "justify-end" : "justify-start"} ${showTail ? "mt-2.5" : "mt-[3px]"}`}
+                      >
                         <div
-                          key={msg.id}
-                          className={`flex ${isMine ? "justify-end" : "justify-start"} ${!sameSender ? "mt-3" : ""}`}
+                          className={`relative max-w-[85%] sm:max-w-[65%] text-[14.5px] ${
+                            isAudio ? "px-2.5 py-2" : "px-3 py-1.5"
+                          } ${
+                            isMine
+                              ? `bg-amber-500 dark:bg-amber-600 text-white shadow-sm ${
+                                  showTail ? "rounded-xl rounded-tr-sm" : "rounded-xl"
+                                }`
+                              : `bg-white dark:bg-zinc-800 shadow-sm ${
+                                  showTail ? "rounded-xl rounded-tl-sm" : "rounded-xl"
+                                }`
+                          }`}
                         >
-                          <div
-                            className={`relative max-w-[80%] sm:max-w-[70%] text-sm shadow-sm ${
-                              isAudio ? "px-3 py-2.5" : "px-3.5 py-2"
-                            } ${
-                              isMine
-                                ? `bg-gradient-to-br from-amber-500 to-amber-600 text-white ${!sameSender ? "rounded-2xl rounded-br-md" : "rounded-2xl rounded-br-md"}`
-                                : `bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 ${!sameSender ? "rounded-2xl rounded-bl-md" : "rounded-2xl rounded-bl-md"}`
-                            }`}
-                          >
-                            {isAudio ? (
-                              <VoiceMessage src={msg.content} isMine={isMine} />
-                            ) : (
-                              <p className="break-words leading-relaxed">{msg.content}</p>
-                            )}
-                            <div className={`flex items-center justify-end gap-0.5 ${isAudio ? "" : "mt-1"} ${isMine ? "text-amber-100/80" : "text-muted-foreground/60"}`}>
-                              <span className="text-[10px]">
-                                {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                              </span>
-                              <ReadReceipt msg={msg} isMine={isMine} />
-                            </div>
+                          {isAudio ? (
+                            <VoiceMessage src={msg.content} isMine={isMine} />
+                          ) : (
+                            <p className="break-words whitespace-pre-wrap">{msg.content}</p>
+                          )}
+                          <div className={`flex items-center justify-end gap-0.5 -mb-0.5 ${
+                            isAudio ? "mt-0" : "mt-0.5"
+                          } ${
+                            isMine ? "text-white/60" : "text-gray-400 dark:text-zinc-500"
+                          }`}>
+                            <span className="text-[10px] leading-none">
+                              {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                            <ReadReceipt msg={msg} isMine={isMine} />
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+                      </div>
+                    );
+                  })}
                   <div ref={messagesEndRef} />
                 </div>
 
                 {/* Input */}
-                <div className="p-3 border-t shrink-0 bg-background">
+                <div className="px-3 py-2 border-t shrink-0 bg-background">
                   {audioPreview ? (
-                    /* Voice note preview — listen before sending */
-                    <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-500/10 rounded-xl p-2">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 shrink-0 text-red-500 hover:text-red-600 hover:bg-red-100 rounded-full"
+                    /* Voice note preview */
+                    <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 rounded-full px-2 py-1.5">
+                      <button
+                        className="h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-red-500 hover:bg-red-100 dark:hover:bg-red-500/10 transition-colors"
                         onClick={discardVoiceNote}
                       >
                         <X className="h-4 w-4" />
-                      </Button>
+                      </button>
                       <div className="flex-1 min-w-0">
                         <audio controls src={audioPreview} className="w-full h-8" style={{ filter: "sepia(20%) saturate(70%) grayscale(1) contrast(99%) invert(12%)" }} />
                       </div>
-                      <Button
-                        size="icon"
+                      <button
                         disabled={sending}
-                        className="h-9 w-9 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0"
+                        className="h-9 w-9 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50"
                         onClick={sendVoiceNote}
                       >
                         {sending ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="h-4 w-4" />}
-                      </Button>
+                      </button>
                     </div>
                   ) : recording ? (
                     /* Recording in progress */
-                    <div className="flex items-center gap-3">
-                      <span className="h-3 w-3 rounded-full bg-red-500 animate-pulse shrink-0" />
-                      <span className="text-sm font-medium text-red-500 tabular-nums">
+                    <div className="flex items-center gap-3 bg-red-50 dark:bg-red-900/10 rounded-full px-3 py-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+                      <span className="text-sm font-mono font-medium text-red-500 tabular-nums">
                         {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, "0")}
                       </span>
-                      <div className="flex-1 flex items-center justify-center gap-[2px] h-8">
+                      <div className="flex-1 flex items-center justify-center gap-[2px] h-7">
                         {waveformBars.map((h, i) => (
                           <span
                             key={i}
-                            className="w-[3px] bg-red-500 rounded-full transition-all duration-75"
+                            className="w-[2.5px] bg-red-400 dark:bg-red-500 rounded-full transition-all duration-75"
                             style={{ height: `${h}px` }}
                           />
                         ))}
                       </div>
-                      <Button
-                        size="icon"
-                        variant="destructive"
-                        className="shrink-0"
+                      <button
+                        className="h-9 w-9 rounded-full bg-red-500 hover:bg-red-600 text-white shrink-0 flex items-center justify-center transition-all active:scale-95"
                         onClick={stopRecording}
                       >
-                        <Square className="h-4 w-4" />
-                      </Button>
+                        <Square className="h-3.5 w-3.5" fill="white" />
+                      </button>
                     </div>
                   ) : (
                     /* Normal text input */
                     <form
                       onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-                      className="flex gap-2"
+                      className="flex items-center gap-2"
+                      autoComplete="off"
                     >
-                      <input
-                        ref={inputRef}
-                        placeholder="Type a message..."
-                        value={newMessage}
-                        onChange={(e) => { setNewMessage(e.target.value); broadcastTyping(); }}
-                        className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        autoComplete="off"
-                        autoCorrect="on"
-                        autoCapitalize="sentences"
-                        spellCheck={true}
-                        enterKeyHint="send"
-                        data-form-type="other"
-                      />
+                      <div className="flex-1 relative">
+                        <input
+                          ref={inputRef}
+                          type="text"
+                          inputMode="text"
+                          placeholder="Message"
+                          value={newMessage}
+                          onChange={(e) => { setNewMessage(e.target.value); broadcastTyping(); }}
+                          className="w-full h-11 rounded-full bg-gray-100 dark:bg-zinc-800 px-4 text-sm outline-none placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:ring-2 focus:ring-amber-500/30"
+                          name="chatmsg"
+                          autoComplete="off"
+                          autoCorrect="on"
+                          autoCapitalize="sentences"
+                          enterKeyHint="send"
+                          data-form-type="other"
+                          data-lpignore="true"
+                          data-1p-ignore="true"
+                        />
+                      </div>
                       {newMessage.trim() ? (
-                        <Button
+                        <button
                           type="submit"
-                          size="icon"
                           disabled={sending}
-                          className="bg-amber-500 hover:bg-amber-600 text-white shrink-0"
+                          className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50"
                         >
                           <Send className="h-4 w-4" />
-                        </Button>
+                        </button>
                       ) : (
-                        <Button
+                        <button
                           type="button"
-                          size="icon"
-                          className="bg-amber-500 hover:bg-amber-600 text-white shrink-0"
+                          className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center transition-all active:scale-95"
                           onClick={startRecording}
                         >
                           <Mic className="h-4 w-4" />
-                        </Button>
+                        </button>
                       )}
                     </form>
                   )}
