@@ -848,7 +848,7 @@ function MessagesContent() {
           </div>
 
           {/* Chat Area */}
-          <div className={`${selectedPeerId ? "flex" : "hidden md:flex"} flex-col flex-1 bg-background min-h-0`}>
+          <div className={`${selectedPeerId ? "fixed inset-0 z-50 md:relative md:inset-auto md:z-auto flex" : "hidden md:flex"} flex-col flex-1 bg-background min-h-0`}>
             {!selectedPeerId ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
@@ -859,7 +859,7 @@ function MessagesContent() {
             ) : (
               <>
                 {/* Chat Header */}
-                <div className="flex items-center gap-3 p-3 border-b shrink-0">
+                <div className="flex items-center gap-3 px-3 py-2 border-b shrink-0 md:pt-2" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -972,25 +972,17 @@ function MessagesContent() {
                                 }`
                           }`}
                         >
-                          {/* Pinned indicator */}
-                          {msg.pinned && !isDeleted && (
-                            <div className={`flex items-center gap-1 mb-1 ${isMine ? "text-white/50" : "text-amber-500/60"}`}>
-                              <Pin className="h-2.5 w-2.5" />
-                              <span className="text-[10px]">Pinned</span>
-                            </div>
-                          )}
-
                           {/* Reply reference */}
                           {hasReply && !isDeleted && (
-                            <div className={`mb-1 px-2 py-1 rounded-lg text-[12px] border-l-2 ${
+                            <div className={`mb-0.5 px-1.5 py-0.5 rounded border-l-2 ${
                               isMine
-                                ? "bg-white/15 border-white/40 text-white/80"
-                                : "bg-gray-100 dark:bg-zinc-700/50 border-amber-400 text-muted-foreground"
+                                ? "bg-white/10 border-white/30 text-white/70"
+                                : "bg-gray-50 dark:bg-zinc-700/40 border-amber-400 text-muted-foreground"
                             }`}>
-                              <p className="font-medium text-[11px] mb-0.5">
+                              <p className={`font-semibold text-[10px] leading-tight ${isMine ? "text-white/90" : "text-amber-600 dark:text-amber-400"}`}>
                                 {msg.reply_sender_id === user.id ? "You" : selectedPeer?.name?.split(" ")[0] || ""}
                               </p>
-                              <p className="truncate">{msg.reply_preview}</p>
+                              <p className="truncate text-[11px] leading-tight">{msg.reply_preview}</p>
                             </div>
                           )}
 
@@ -1032,6 +1024,7 @@ function MessagesContent() {
                           } ${
                             isMine ? "text-white/60" : "text-gray-400 dark:text-zinc-500"
                           }`}>
+                            {msg.pinned && !isDeleted && <Pin className="h-2 w-2 shrink-0" />}
                             <span className="text-[10px] leading-none">
                               {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                             </span>
