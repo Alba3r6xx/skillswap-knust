@@ -310,7 +310,11 @@ export default function Navbar() {
             </Button>
           )}
           <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-amber-100 text-amber-700 text-xs">{initials}</AvatarFallback>
+            {user.avatar_url ? (
+              <img src={user.avatar_url} alt={user.name} className="h-full w-full object-cover rounded-full" />
+            ) : (
+              <AvatarFallback className="bg-amber-100 text-amber-700 text-xs">{initials}</AvatarFallback>
+            )}
           </Avatar>
         </div>
       </header>

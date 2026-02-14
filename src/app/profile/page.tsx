@@ -30,6 +30,7 @@ export default function ProfilePage() {
   const { user, isLoading, refreshProfile } = useAuth();
   const router = useRouter();
 
+  const [name, setName] = useState("");
   const [bio, setBio] = useState("");
   const [faculty, setFaculty] = useState("");
   const [contact, setContact] = useState("");
@@ -51,6 +52,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user) {
+      setName(user.name || "");
       setBio(user.bio || "");
       setFaculty(user.faculty || "");
       setContact(user.contact || "");
@@ -98,6 +100,7 @@ export default function ProfilePage() {
     setSaving(true);
     try {
       const { error } = await updateProfile(user.id, {
+        name: name.trim(),
         bio,
         faculty,
         contact,
@@ -173,18 +176,27 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="text-center mb-6">
-          <h2 className="text-lg font-semibold">{user.name}</h2>
-          <p className="text-sm text-muted-foreground">{user.email}</p>
-        </div>
-
         <div className="space-y-6">
-          {/* Bio & Contact */}
+          {/* Personal Info */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">About</CardTitle>
+              <CardTitle className="text-base">Personal Info</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Full Name</Label>
+                  <Input
+                    placeholder="Your full name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input value={user.email} disabled className="opacity-60" />
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label>Bio</Label>
                 <Textarea
@@ -194,7 +206,7 @@ export default function ProfilePage() {
                   rows={3}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Faculty</Label>
                   <Select value={faculty} onValueChange={setFaculty}>
@@ -251,36 +263,37 @@ export default function ProfilePage() {
                   </Badge>
                 ))}
               </div>
-              <div className="flex gap-2">
+              <div className="space-y-2">
                 <Input
                   placeholder="Skill name"
                   value={newTeachSkill}
                   onChange={(e) => setNewTeachSkill(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTeachSkill())}
-                  className="flex-1"
                 />
-                <Select value={newTeachLevel} onValueChange={setNewTeachLevel}>
-                  <SelectTrigger className="w-[130px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="beginner">Beginner</SelectItem>
-                    <SelectItem value="intermediate">Intermediate</SelectItem>
-                    <SelectItem value="advanced">Advanced</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={newTeachCategory} onValueChange={setNewTeachCategory}>
-                  <SelectTrigger className="w-[130px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SKILL_CATEGORIES.map((c) => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button size="icon" variant="outline" onClick={addTeachSkill}>
-                  <Plus className="h-4 w-4" />
+                <div className="flex gap-2">
+                  <Select value={newTeachLevel} onValueChange={setNewTeachLevel}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="beginner">Beginner</SelectItem>
+                      <SelectItem value="intermediate">Intermediate</SelectItem>
+                      <SelectItem value="advanced">Advanced</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={newTeachCategory} onValueChange={setNewTeachCategory}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SKILL_CATEGORIES.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button variant="outline" className="w-full gap-2" onClick={addTeachSkill}>
+                  <Plus className="h-4 w-4" /> Add Skill
                 </Button>
               </div>
             </CardContent>
@@ -304,36 +317,37 @@ export default function ProfilePage() {
                   </Badge>
                 ))}
               </div>
-              <div className="flex gap-2">
+              <div className="space-y-2">
                 <Input
                   placeholder="Skill name"
                   value={newLearnSkill}
                   onChange={(e) => setNewLearnSkill(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addLearnSkill())}
-                  className="flex-1"
                 />
-                <Select value={newLearnLevel} onValueChange={setNewLearnLevel}>
-                  <SelectTrigger className="w-[130px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="beginner">Beginner</SelectItem>
-                    <SelectItem value="intermediate">Intermediate</SelectItem>
-                    <SelectItem value="advanced">Advanced</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={newLearnCategory} onValueChange={setNewLearnCategory}>
-                  <SelectTrigger className="w-[130px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SKILL_CATEGORIES.map((c) => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button size="icon" variant="outline" onClick={addLearnSkill}>
-                  <Plus className="h-4 w-4" />
+                <div className="flex gap-2">
+                  <Select value={newLearnLevel} onValueChange={setNewLearnLevel}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="beginner">Beginner</SelectItem>
+                      <SelectItem value="intermediate">Intermediate</SelectItem>
+                      <SelectItem value="advanced">Advanced</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={newLearnCategory} onValueChange={setNewLearnCategory}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SKILL_CATEGORIES.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button variant="outline" className="w-full gap-2" onClick={addLearnSkill}>
+                  <Plus className="h-4 w-4" /> Add Skill
                 </Button>
               </div>
             </CardContent>
