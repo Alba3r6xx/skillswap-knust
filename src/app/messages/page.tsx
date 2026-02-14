@@ -160,7 +160,7 @@ function VoiceMessage({ src, isMine }: { src: string; isMine: boolean }) {
   };
 
   return (
-    <div className="flex items-center gap-3 min-w-[220px] max-w-[280px]">
+    <div className="flex items-center gap-3 w-full">
       <audio
         ref={audioRef}
         src={src}
@@ -231,7 +231,7 @@ function MessagesContent() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLDivElement>(null);
   const [peerTyping, setPeerTyping] = useState(false);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -377,10 +377,10 @@ function MessagesContent() {
     if (data) {
       setMessages((prev) => [...prev, data]);
       setNewMessage("");
+      if (inputRef.current) inputRef.current.textContent = "";
       fetchConversations();
     }
     setSending(false);
-    // Keep focus on input after sending (important for mobile)
     inputRef.current?.focus();
   };
 
@@ -521,7 +521,7 @@ function MessagesContent() {
   const selectedPeer = selectedPeerId ? peerProfiles[selectedPeerId] : null;
 
   return (
-    <div className="h-[calc(100dvh-3.5rem)] md:h-[calc(100dvh)] bg-gray-50 dark:bg-background flex flex-col">
+    <div className="h-[calc(100dvh-3.5rem)] md:h-[calc(100dvh)] bg-gray-50 dark:bg-background flex flex-col overflow-hidden">
       {/* Header - only show on conversation list view or desktop */}
       <div className={`${selectedPeerId ? "hidden md:block" : "block"} px-4 pt-4 pb-2 md:pt-6 md:pb-4 max-w-4xl mx-auto w-full`}>
         <h1 className="text-2xl font-bold">Messages</h1>
@@ -700,7 +700,7 @@ function MessagesContent() {
                       >
                         <div
                           className={`relative max-w-[85%] sm:max-w-[65%] text-[14.5px] ${
-                            isAudio ? "px-2.5 py-2" : "px-3 py-1.5"
+                            isAudio ? "px-2.5 py-2 w-[280px] max-w-full" : "px-3 py-1.5"
                           } ${
                             isMine
                               ? `bg-amber-500 dark:bg-amber-600 text-white shadow-sm ${
@@ -779,25 +779,39 @@ function MessagesContent() {
                       </button>
                     </div>
                   ) : (
-                    /* Normal text input — no <form> to prevent iOS form navigation bar */
+                    /* contentEditable div — iOS won't show form assistant bar (< > arrows) for non-form elements */
                     <div className="flex items-center gap-2">
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        inputMode="text"
-                        placeholder="Message"
-                        value={newMessage}
-                        onChange={(e) => { setNewMessage(e.target.value); broadcastTyping(); }}
-                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                        className="flex-1 h-11 rounded-full bg-gray-100 dark:bg-zinc-800 px-4 text-base outline-none placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:ring-2 focus:ring-amber-500/30"
-                        autoComplete="off"
-                        autoCorrect="on"
-                        autoCapitalize="sentences"
-                        enterKeyHint="send"
-                        data-form-type="other"
-                        data-lpignore="true"
-                        data-1p-ignore="true"
-                      />
+                      <div className="flex-1 relative">
+                        {!newMessage && (
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 pointer-events-none text-base select-none">
+                            Message
+                          </div>
+                        )}
+                        <div
+                          ref={inputRef}
+                          contentEditable
+                          role="textbox"
+                          aria-label="Message"
+                          onInput={() => {
+                            const text = inputRef.current?.textContent || "";
+                            setNewMessage(text);
+                            broadcastTyping();
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSend();
+                            }
+                          }}
+                          onPaste={(e) => {
+                            e.preventDefault();
+                            const text = e.clipboardData.getData("text/plain");
+                            document.execCommand("insertText", false, text);
+                          }}
+                          className="min-h-[2.75rem] max-h-24 rounded-[22px] bg-gray-100 dark:bg-zinc-800 px-4 py-2.5 text-base outline-none overflow-y-auto break-words whitespace-pre-wrap focus:ring-2 focus:ring-amber-500/30"
+                          style={{ WebkitUserSelect: "text", userSelect: "text" }}
+                        />
+                      </div>
                       {newMessage.trim() ? (
                         <button
                           type="button"

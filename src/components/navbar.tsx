@@ -309,13 +309,15 @@ export default function Navbar() {
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
           )}
-          <Avatar className="h-8 w-8">
-            {user.avatar_url ? (
-              <img src={user.avatar_url} alt={user.name} className="h-full w-full object-cover rounded-full" />
-            ) : (
-              <AvatarFallback className="bg-amber-100 text-amber-700 text-xs">{initials}</AvatarFallback>
-            )}
-          </Avatar>
+          <Link href="/profile">
+            <Avatar className="h-8 w-8">
+              {user.avatar_url ? (
+                <img src={user.avatar_url} alt={user.name} className="h-full w-full object-cover rounded-full" />
+              ) : (
+                <AvatarFallback className="bg-amber-100 text-amber-700 text-xs">{initials}</AvatarFallback>
+              )}
+            </Avatar>
+          </Link>
         </div>
       </header>
       {/* Mobile spacer */}
