@@ -18,7 +18,10 @@ import {
   MessageSquare,
   Check,
   CheckCheck,
+  Mic,
+  Square,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface Conversation {
   peerId: string;
@@ -29,11 +32,13 @@ interface Conversation {
 
 function ReadReceipt({ msg, isMine }: { msg: Message; isMine: boolean }) {
   if (!isMine) return null;
-  return msg.read ? (
-    <CheckCheck className="h-3.5 w-3.5 text-blue-400 inline-block ml-1 shrink-0" />
-  ) : (
-    <Check className="h-3 w-3 text-amber-200 inline-block ml-1 shrink-0" />
-  );
+  if (msg.read) {
+    return <CheckCheck className="h-3.5 w-3.5 text-blue-400 inline-block ml-1 shrink-0" />;
+  }
+  if (msg.delivered) {
+    return <CheckCheck className="h-3.5 w-3.5 text-gray-300 inline-block ml-1 shrink-0" />;
+  }
+  return <Check className="h-3 w-3 text-amber-200 inline-block ml-1 shrink-0" />;
 }
 
 export default function MessagesPage() {
@@ -62,6 +67,11 @@ function MessagesContent() {
   const [peerTyping, setPeerTyping] = useState(false);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) router.push("/login");
@@ -165,7 +175,7 @@ function MessagesContent() {
         (payload) => {
           const updated = payload.new as Message;
           setMessages((prev) =>
-            prev.map((m) => (m.id === updated.id ? { ...m, read: updated.read } : m))
+            prev.map((m) => (m.id === updated.id ? { ...m, read: updated.read, delivered: updated.delivered } : m))
           );
         }
       )
@@ -197,6 +207,84 @@ function MessagesContent() {
     setSending(false);
     // Keep focus on input after sending (important for mobile)
     inputRef.current?.focus();
+  };
+
+  const startRecording = async () => {
+    if (!user || !selectedPeerId) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : "audio/mp4",
+      });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+        setRecordingDuration(0);
+
+        const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+        if (blob.size < 1000) return; // too short
+
+        setSending(true);
+        const ext = mediaRecorder.mimeType.includes("webm") ? "webm" : "m4a";
+        const fileName = `${user.id}/${Date.now()}.${ext}`;
+
+        const { error: uploadErr } = await supabase.storage
+          .from("audio-messages")
+          .upload(fileName, blob, { contentType: mediaRecorder.mimeType });
+
+        if (uploadErr) {
+          toast.error("Failed to upload voice note");
+          setSending(false);
+          return;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from("audio-messages")
+          .getPublicUrl(fileName);
+
+        const { data: msgData } = await sendMessage({
+          sender_id: user.id,
+          receiver_id: selectedPeerId,
+          content: urlData.publicUrl,
+          type: "audio",
+        });
+
+        if (msgData) {
+          setMessages((prev) => [...prev, msgData]);
+          fetchConversations();
+        }
+        setSending(false);
+      };
+
+      mediaRecorder.start();
+      setRecording(true);
+      setRecordingDuration(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration((d) => d + 1);
+      }, 1000);
+    } catch {
+      toast.error("Microphone access denied");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+    setRecording(false);
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
   };
 
   if (isLoading || !user) {
@@ -297,7 +385,9 @@ function MessagesContent() {
                               {isMineLastMsg && (
                                 conv.lastMessage.read
                                   ? <CheckCheck className="h-3 w-3 text-blue-500 mr-1 shrink-0" />
-                                  : <Check className="h-3 w-3 text-muted-foreground mr-1 shrink-0" />
+                                  : conv.lastMessage.delivered
+                                    ? <CheckCheck className="h-3 w-3 text-gray-400 mr-1 shrink-0" />
+                                    : <Check className="h-3 w-3 text-muted-foreground mr-1 shrink-0" />
                               )}
                               {conv.lastMessage.content}
                             </p>
@@ -378,7 +468,14 @@ function MessagesContent() {
                               : "bg-muted rounded-bl-sm"
                           }`}
                         >
-                          <p className="break-words">{msg.content}</p>
+                          {msg.type === "audio" ? (
+                            <audio controls preload="metadata" className="max-w-[220px] h-8">
+                              <source src={msg.content} type="audio/webm" />
+                              <source src={msg.content} type="audio/mp4" />
+                            </audio>
+                          ) : (
+                            <p className="break-words">{msg.content}</p>
+                          )}
                           <div className={`flex items-center justify-end gap-0.5 mt-0.5 ${isMine ? "text-amber-100" : "text-muted-foreground"}`}>
                             <span className="text-[10px]">
                               {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -394,27 +491,56 @@ function MessagesContent() {
 
                 {/* Input */}
                 <div className="p-3 border-t shrink-0 bg-background">
-                  <form
-                    onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-                    className="flex gap-2"
-                  >
-                    <Input
-                      ref={inputRef}
-                      placeholder="Type a message..."
-                      value={newMessage}
-                      onChange={(e) => { setNewMessage(e.target.value); broadcastTyping(); }}
-                      className="flex-1"
-                      autoComplete="off"
-                    />
-                    <Button
-                      type="submit"
-                      size="icon"
-                      disabled={!newMessage.trim() || sending}
-                      className="bg-amber-500 hover:bg-amber-600 text-white shrink-0"
+                  {recording ? (
+                    <div className="flex items-center gap-3">
+                      <span className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />
+                      <span className="text-sm font-medium text-red-500">
+                        {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, "0")}
+                      </span>
+                      <span className="text-xs text-muted-foreground flex-1">Recording...</span>
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        className="shrink-0"
+                        onClick={stopRecording}
+                      >
+                        <Square className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <form
+                      onSubmit={(e) => { e.preventDefault(); handleSend(); }}
+                      className="flex gap-2"
                     >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </form>
+                      <Input
+                        ref={inputRef}
+                        placeholder="Type a message..."
+                        value={newMessage}
+                        onChange={(e) => { setNewMessage(e.target.value); broadcastTyping(); }}
+                        className="flex-1"
+                        autoComplete="off"
+                      />
+                      {newMessage.trim() ? (
+                        <Button
+                          type="submit"
+                          size="icon"
+                          disabled={sending}
+                          className="bg-amber-500 hover:bg-amber-600 text-white shrink-0"
+                        >
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="icon"
+                          className="bg-amber-500 hover:bg-amber-600 text-white shrink-0"
+                          onClick={startRecording}
+                        >
+                          <Mic className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </form>
+                  )}
                 </div>
               </>
             )}

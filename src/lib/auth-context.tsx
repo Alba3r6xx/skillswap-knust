@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { Profile } from "@/lib/types";
+import { markMessagesAsDelivered } from "@/lib/data";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface AuthContextType {
@@ -39,8 +40,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (data && !error) {
       setUser(data as Profile);
-      // Fire-and-forget: update last_seen without blocking
+      // Fire-and-forget: update last_seen + mark messages as delivered
       supabase.rpc("update_last_seen").then(() => {}, () => {});
+      markMessagesAsDelivered(userId).catch(() => {});
     }
     return data as Profile | null;
   };

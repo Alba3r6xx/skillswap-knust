@@ -200,10 +200,18 @@ export async function sendMessage(msg: { sender_id: string; receiver_id: string;
 export async function markMessagesAsRead(userId: string, senderId: string) {
   await supabase
     .from("messages")
-    .update({ read: true })
+    .update({ read: true, delivered: true })
     .eq("receiver_id", userId)
     .eq("sender_id", senderId)
     .eq("read", false);
+}
+
+export async function markMessagesAsDelivered(userId: string) {
+  await supabase
+    .from("messages")
+    .update({ delivered: true })
+    .eq("receiver_id", userId)
+    .eq("delivered", false);
 }
 
 // ─── Notifications ──────────────────────────────────────────
