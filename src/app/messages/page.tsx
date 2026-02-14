@@ -73,9 +73,13 @@ function MessagesContent() {
   const [audioPreview, setAudioPreview] = useState<string | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioMime, setAudioMime] = useState("");
+  const [waveformBars, setWaveformBars] = useState<number[]>(new Array(24).fill(4));
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animFrameRef = useRef<number>(0);
 
   useEffect(() => {
     if (!isLoading && !user) router.push("/login");
@@ -225,6 +229,28 @@ function MessagesContent() {
       audioChunksRef.current = [];
       setAudioMime(mime);
 
+      // Web Audio API for real waveform
+      const audioCtx = new AudioContext();
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 64;
+      source.connect(analyser);
+      audioContextRef.current = audioCtx;
+      analyserRef.current = analyser;
+
+      const updateBars = () => {
+        if (!analyserRef.current) return;
+        const data = new Uint8Array(analyserRef.current.frequencyBinCount);
+        analyserRef.current.getByteFrequencyData(data);
+        const bars = Array.from({ length: 24 }, (_, i) => {
+          const val = data[Math.floor((i / 24) * data.length)] || 0;
+          return Math.max(3, (val / 255) * 28);
+        });
+        setWaveformBars(bars);
+        animFrameRef.current = requestAnimationFrame(updateBars);
+      };
+      updateBars();
+
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
@@ -232,6 +258,11 @@ function MessagesContent() {
       mediaRecorder.onstop = () => {
         stream.getTracks().forEach((t) => t.stop());
         if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+        cancelAnimationFrame(animFrameRef.current);
+        audioCtx.close().catch(() => {});
+        analyserRef.current = null;
+        audioContextRef.current = null;
+        setWaveformBars(new Array(24).fill(4));
 
         const blob = new Blob(audioChunksRef.current, { type: mime });
         if (blob.size < 500) {
@@ -259,6 +290,7 @@ function MessagesContent() {
       mediaRecorderRef.current.stop();
     }
     setRecording(false);
+    cancelAnimationFrame(animFrameRef.current);
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
       recordingTimerRef.current = null;
@@ -283,7 +315,8 @@ function MessagesContent() {
       .upload(fileName, audioBlob, { contentType: audioMime });
 
     if (uploadErr) {
-      toast.error("Failed to upload voice note");
+      console.error("Upload error:", uploadErr);
+      toast.error("Failed to upload voice note: " + uploadErr.message);
       setSending(false);
       return;
     }
@@ -292,14 +325,17 @@ function MessagesContent() {
       .from("audio-messages")
       .getPublicUrl(fileName);
 
-    const { data: msgData } = await sendMessage({
+    const { data: msgData, error: msgErr } = await sendMessage({
       sender_id: user.id,
       receiver_id: selectedPeerId,
       content: urlData.publicUrl,
       type: "audio",
     });
 
-    if (msgData) {
+    if (msgErr) {
+      console.error("Send voice error:", msgErr);
+      toast.error("Failed to send voice note");
+    } else if (msgData) {
       setMessages((prev) => [...prev, msgData]);
       fetchConversations();
     }
@@ -539,15 +575,12 @@ function MessagesContent() {
                       <span className="text-sm font-medium text-red-500 tabular-nums">
                         {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, "0")}
                       </span>
-                      <div className="flex-1 flex items-center gap-1">
-                        {Array.from({ length: 20 }).map((_, i) => (
+                      <div className="flex-1 flex items-center justify-center gap-[2px] h-8">
+                        {waveformBars.map((h, i) => (
                           <span
                             key={i}
-                            className="w-1 bg-red-400 rounded-full animate-pulse"
-                            style={{
-                              height: `${8 + Math.random() * 16}px`,
-                              animationDelay: `${i * 0.05}s`,
-                            }}
+                            className="w-[3px] bg-red-500 rounded-full transition-all duration-75"
+                            style={{ height: `${h}px` }}
                           />
                         ))}
                       </div>
