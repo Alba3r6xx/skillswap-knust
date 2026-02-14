@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { getConversations, getMessagesBetween, sendMessage, markMessagesAsRead, getProfileById } from "@/lib/data";
+import { getConversations, getMessagesBetween, sendMessage, markMessagesAsRead, getProfileById, deleteMessage, togglePinMessage } from "@/lib/data";
 import { Message, Profile } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,11 @@ import {
   Paperclip,
   FileText,
   Download,
+  Reply,
+  Trash2,
+  Pin,
+  PinOff,
+  Copy,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -257,6 +262,14 @@ function MessagesContent() {
   const docInputRef = useRef<HTMLInputElement>(null);
   const [docFile, setDocFile] = useState<File | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ msg: Message; x: number; y: number } | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTouchDevice = useRef(false);
+
+  useEffect(() => {
+    isTouchDevice.current = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  }, []);
 
   useEffect(() => {
     if (!isLoading && !user) router.push("/login");
@@ -360,7 +373,7 @@ function MessagesContent() {
         (payload) => {
           const updated = payload.new as Message;
           setMessages((prev) =>
-            prev.map((m) => (m.id === updated.id ? { ...m, read: updated.read, delivered: updated.delivered } : m))
+            prev.map((m) => (m.id === updated.id ? { ...m, read: updated.read, delivered: updated.delivered, deleted_at: updated.deleted_at, content: updated.content, pinned: updated.pinned } : m))
           );
         }
       )
@@ -376,18 +389,32 @@ function MessagesContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const getReplyPreview = (msg: Message) => {
+    if (msg.type === "audio") return "🎤 Voice note";
+    if (msg.type === "image") return "📷 Photo";
+    if (msg.type === "document") return "📄 Document";
+    return msg.content.length > 60 ? msg.content.slice(0, 60) + "..." : msg.content;
+  };
+
   const handleSend = async () => {
     if (!newMessage.trim() || !user || !selectedPeerId || sending) return;
     setSending(true);
-    const { data } = await sendMessage({
+    const payload: Parameters<typeof sendMessage>[0] = {
       sender_id: user.id,
       receiver_id: selectedPeerId,
       content: newMessage.trim(),
-    });
+    };
+    if (replyTo) {
+      payload.reply_to = replyTo.id;
+      payload.reply_preview = getReplyPreview(replyTo);
+      payload.reply_sender_id = replyTo.sender_id;
+    }
+    const { data } = await sendMessage(payload);
     if (data) {
       setMessages((prev) => [...prev, data]);
       setNewMessage("");
       if (inputRef.current) inputRef.current.textContent = "";
+      setReplyTo(null);
       fetchConversations();
     }
     setSending(false);
@@ -650,6 +677,44 @@ function MessagesContent() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  // Context menu handlers
+  const openContextMenu = (msg: Message, x: number, y: number) => {
+    if (msg.deleted_at) return;
+    setContextMenu({ msg, x, y });
+  };
+
+  const handleReply = (msg: Message) => {
+    setReplyTo(msg);
+    setContextMenu(null);
+    inputRef.current?.focus();
+  };
+
+  const handleDelete = async (msg: Message) => {
+    setContextMenu(null);
+    const { error } = await deleteMessage(msg.id);
+    if (error) { toast.error("Failed to delete"); return; }
+    setMessages((prev) => prev.map((m) => m.id === msg.id ? { ...m, deleted_at: new Date().toISOString(), content: "" } : m));
+    fetchConversations();
+  };
+
+  const handlePin = async (msg: Message) => {
+    setContextMenu(null);
+    const newPinned = !msg.pinned;
+    const { error } = await togglePinMessage(msg.id, newPinned);
+    if (error) { toast.error("Failed to pin"); return; }
+    setMessages((prev) => prev.map((m) => m.id === msg.id ? { ...m, pinned: newPinned } : m));
+    toast.success(newPinned ? "Message pinned" : "Message unpinned");
+  };
+
+  const handleCopy = (msg: Message) => {
+    setContextMenu(null);
+    const text = msg.type === "document" ? parseDocContent(msg.content).name : msg.content;
+    navigator.clipboard.writeText(text).then(() => toast.success("Copied")).catch(() => {});
+  };
+
+  // Pinned messages
+  const pinnedMessages = messages.filter((m) => m.pinned && !m.deleted_at);
+
   if (isLoading || !user) {
     return (
       <div className="bg-gray-50 dark:bg-background p-6">
@@ -819,8 +884,27 @@ function MessagesContent() {
                   )}
                 </div>
 
+                {/* Pinned messages banner */}
+                {pinnedMessages.length > 0 && (
+                  <div className="px-3 py-2 border-b bg-amber-50/80 dark:bg-amber-500/5 shrink-0">
+                    <div className="flex items-center gap-2 text-xs">
+                      <Pin className="h-3 w-3 text-amber-600 shrink-0" />
+                      <span className="font-medium text-amber-700 dark:text-amber-400 shrink-0">Pinned</span>
+                      <span className="truncate text-muted-foreground">
+                        {pinnedMessages[pinnedMessages.length - 1].type === "audio" ? "🎤 Voice note"
+                          : pinnedMessages[pinnedMessages.length - 1].type === "image" ? "📷 Photo"
+                          : pinnedMessages[pinnedMessages.length - 1].type === "document" ? "📄 Document"
+                          : pinnedMessages[pinnedMessages.length - 1].content}
+                      </span>
+                      {pinnedMessages.length > 1 && (
+                        <span className="text-muted-foreground shrink-0">+{pinnedMessages.length - 1}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-3 min-h-0 bg-amber-50/30 dark:bg-zinc-950/50">
+                <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-3 min-h-0 bg-amber-50/30 dark:bg-zinc-950/50" onClick={() => setContextMenu(null)}>
                   {messages.length === 0 && (
                     <div className="text-center py-20">
                       <div className="h-14 w-14 mx-auto mb-3 rounded-full bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center">
@@ -834,33 +918,69 @@ function MessagesContent() {
                     const isMine = msg.sender_id === user.id;
                     const prevMsg = idx > 0 ? messages[idx - 1] : null;
                     const sameSender = prevMsg?.sender_id === msg.sender_id;
-                    const isAudio = msg.type === "audio";
-                    const isImage = msg.type === "image";
-                    const isDoc = msg.type === "document";
+                    const isDeleted = !!msg.deleted_at;
+                    const isAudio = !isDeleted && msg.type === "audio";
+                    const isImage = !isDeleted && msg.type === "image";
+                    const isDoc = !isDeleted && msg.type === "document";
                     const showTail = !sameSender;
+                    const hasReply = !!msg.reply_to && !!msg.reply_preview;
 
                     return (
                       <div
                         key={msg.id}
                         className={`flex ${isMine ? "justify-end" : "justify-start"} ${showTail ? "mt-2.5" : "mt-[3px]"}`}
+                        onContextMenu={(e) => { e.preventDefault(); openContextMenu(msg, e.clientX, e.clientY); }}
+                        onTouchStart={(e) => {
+                          const t = e.touches[0];
+                          longPressTimer.current = setTimeout(() => openContextMenu(msg, t.clientX, t.clientY), 500);
+                        }}
+                        onTouchEnd={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
+                        onTouchMove={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
                       >
                         <div
                           className={`relative max-w-[85%] sm:max-w-[65%] text-[14.5px] ${
-                            isImage ? "p-1 w-[260px] max-w-full"
+                            isDeleted ? "px-3 py-1.5"
+                              : isImage ? "p-1 w-[260px] max-w-full"
                               : isAudio ? "px-2.5 py-2 w-[280px] max-w-full"
                               : isDoc ? "px-3 py-2 w-[260px] max-w-full"
                               : "px-3 py-1.5"
                           } ${
                             isMine
-                              ? `bg-amber-500 dark:bg-amber-600 text-white shadow-sm ${
+                              ? `${isDeleted ? "bg-amber-200/50 dark:bg-amber-900/20" : "bg-amber-500 dark:bg-amber-600"} text-white shadow-sm ${
                                   showTail ? "rounded-xl rounded-tr-sm" : "rounded-xl"
                                 }`
-                              : `bg-white dark:bg-zinc-800 shadow-sm ${
+                              : `${isDeleted ? "bg-gray-100 dark:bg-zinc-800/50" : "bg-white dark:bg-zinc-800"} shadow-sm ${
                                   showTail ? "rounded-xl rounded-tl-sm" : "rounded-xl"
                                 }`
                           }`}
                         >
-                          {isImage ? (
+                          {/* Pinned indicator */}
+                          {msg.pinned && !isDeleted && (
+                            <div className={`flex items-center gap-1 mb-1 ${isMine ? "text-white/50" : "text-amber-500/60"}`}>
+                              <Pin className="h-2.5 w-2.5" />
+                              <span className="text-[10px]">Pinned</span>
+                            </div>
+                          )}
+
+                          {/* Reply reference */}
+                          {hasReply && !isDeleted && (
+                            <div className={`mb-1 px-2 py-1 rounded-lg text-[12px] border-l-2 ${
+                              isMine
+                                ? "bg-white/15 border-white/40 text-white/80"
+                                : "bg-gray-100 dark:bg-zinc-700/50 border-amber-400 text-muted-foreground"
+                            }`}>
+                              <p className="font-medium text-[11px] mb-0.5">
+                                {msg.reply_sender_id === user.id ? "You" : selectedPeer?.name?.split(" ")[0] || ""}
+                              </p>
+                              <p className="truncate">{msg.reply_preview}</p>
+                            </div>
+                          )}
+
+                          {isDeleted ? (
+                            <p className={`italic text-[13px] ${isMine ? "text-white/50" : "text-muted-foreground"}`}>
+                              This message was deleted
+                            </p>
+                          ) : isImage ? (
                             <button type="button" onClick={() => setLightboxSrc(msg.content)} className="block w-full">
                               <img
                                 src={msg.content}
@@ -875,22 +995,13 @@ function MessagesContent() {
                             const doc = parseDocContent(msg.content);
                             const ext = doc.name.split(".").pop()?.toUpperCase() || "FILE";
                             return (
-                              <a
-                                href={doc.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-3 group"
-                              >
-                                <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
-                                  isMine ? "bg-white/20" : "bg-amber-100 dark:bg-amber-500/20"
-                                }`}>
+                              <a href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group">
+                                <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${isMine ? "bg-white/20" : "bg-amber-100 dark:bg-amber-500/20"}`}>
                                   <FileText className={`h-5 w-5 ${isMine ? "text-white" : "text-amber-600 dark:text-amber-400"}`} />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className={`text-sm font-medium truncate ${isMine ? "text-white" : ""}`}>{doc.name}</p>
-                                  <p className={`text-[11px] ${isMine ? "text-white/60" : "text-muted-foreground"}`}>
-                                    {ext} · {formatFileSize(doc.size)}
-                                  </p>
+                                  <p className={`text-[11px] ${isMine ? "text-white/60" : "text-muted-foreground"}`}>{ext} · {formatFileSize(doc.size)}</p>
                                 </div>
                                 <Download className={`h-4 w-4 shrink-0 opacity-60 group-hover:opacity-100 ${isMine ? "text-white" : "text-muted-foreground"}`} />
                               </a>
@@ -906,7 +1017,7 @@ function MessagesContent() {
                             <span className="text-[10px] leading-none">
                               {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                             </span>
-                            <ReadReceipt msg={msg} isMine={isMine} />
+                            {!isDeleted && <ReadReceipt msg={msg} isMine={isMine} />}
                           </div>
                         </div>
                       </div>
@@ -914,6 +1025,24 @@ function MessagesContent() {
                   })}
                   <div ref={messagesEndRef} />
                 </div>
+
+                {/* Reply preview */}
+                {replyTo && (
+                  <div className="px-3 pt-2 pb-0 border-t shrink-0 bg-background">
+                    <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-500/5 rounded-xl px-3 py-2 border-l-2 border-amber-500">
+                      <Reply className="h-4 w-4 text-amber-500 shrink-0 scale-x-[-1]" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                          {replyTo.sender_id === user.id ? "You" : selectedPeer?.name?.split(" ")[0] || ""}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">{getReplyPreview(replyTo)}</p>
+                      </div>
+                      <button className="h-6 w-6 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 flex items-center justify-center shrink-0" onClick={() => setReplyTo(null)}>
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Attachment preview (image or document) */}
                 {(imagePreview || docFile) && (
@@ -1033,7 +1162,7 @@ function MessagesContent() {
                             broadcastTyping();
                           }}
                           onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
+                            if (e.key === "Enter" && !e.shiftKey && !isTouchDevice.current) {
                               e.preventDefault();
                               handleSend();
                             }
@@ -1064,6 +1193,42 @@ function MessagesContent() {
           </div>
         </div>
       </div>
+
+      {/* Context menu */}
+      {contextMenu && (
+        <div
+          className="fixed inset-0 z-[90]"
+          onClick={() => setContextMenu(null)}
+          onContextMenu={(e) => { e.preventDefault(); setContextMenu(null); }}
+        >
+          <div
+            className="absolute bg-white dark:bg-zinc-800 rounded-xl shadow-xl border dark:border-zinc-700 py-1.5 min-w-[160px] z-[91]"
+            style={{
+              left: Math.min(contextMenu.x, window.innerWidth - 180),
+              top: Math.min(contextMenu.y, window.innerHeight - 220),
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 text-left" onClick={() => handleReply(contextMenu.msg)}>
+              <Reply className="h-4 w-4 text-muted-foreground" /> Reply
+            </button>
+            {contextMenu.msg.type === "text" && (
+              <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 text-left" onClick={() => handleCopy(contextMenu.msg)}>
+                <Copy className="h-4 w-4 text-muted-foreground" /> Copy
+              </button>
+            )}
+            <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 text-left" onClick={() => handlePin(contextMenu.msg)}>
+              {contextMenu.msg.pinned ? <PinOff className="h-4 w-4 text-muted-foreground" /> : <Pin className="h-4 w-4 text-muted-foreground" />}
+              {contextMenu.msg.pinned ? "Unpin" : "Pin"}
+            </button>
+            {contextMenu.msg.sender_id === user?.id && (
+              <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-red-50 dark:hover:bg-red-500/10 text-red-500 text-left" onClick={() => handleDelete(contextMenu.msg)}>
+                <Trash2 className="h-4 w-4" /> Delete
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Lightbox — in-app image viewer */}
       {lightboxSrc && (

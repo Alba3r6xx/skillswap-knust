@@ -173,10 +173,12 @@ export async function getMessagesBetween(userId: string, peerId: string): Promis
   return (data as Message[]) || [];
 }
 
-export async function sendMessage(msg: { sender_id: string; receiver_id: string; content: string; type?: string }) {
+export async function sendMessage(msg: { sender_id: string; receiver_id: string; content: string; type?: string; reply_to?: string; reply_preview?: string; reply_sender_id?: string }) {
+  const row: Record<string, unknown> = { sender_id: msg.sender_id, receiver_id: msg.receiver_id, content: msg.content, type: msg.type || "text" };
+  if (msg.reply_to) { row.reply_to = msg.reply_to; row.reply_preview = msg.reply_preview; row.reply_sender_id = msg.reply_sender_id; }
   const { data, error } = await supabase
     .from("messages")
-    .insert({ ...msg, type: msg.type || "text" })
+    .insert(row)
     .select()
     .single();
 
@@ -204,6 +206,22 @@ export async function markMessagesAsRead(userId: string, senderId: string) {
     .eq("receiver_id", userId)
     .eq("sender_id", senderId)
     .eq("read", false);
+}
+
+export async function deleteMessage(messageId: string) {
+  const { error } = await supabase
+    .from("messages")
+    .update({ deleted_at: new Date().toISOString(), content: "" })
+    .eq("id", messageId);
+  return { error };
+}
+
+export async function togglePinMessage(messageId: string, pinned: boolean) {
+  const { error } = await supabase
+    .from("messages")
+    .update({ pinned })
+    .eq("id", messageId);
+  return { error };
 }
 
 export async function markMessagesAsDelivered(userId: string) {

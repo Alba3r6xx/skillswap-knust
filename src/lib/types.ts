@@ -50,6 +50,11 @@ export interface Message {
   read: boolean;
   delivered: boolean;
   created_at: string;
+  reply_to?: string | null;
+  reply_preview?: string | null;
+  reply_sender_id?: string | null;
+  deleted_at?: string | null;
+  pinned?: boolean;
 }
 
 export interface Notification {
