@@ -599,13 +599,18 @@ function MessagesContent() {
                       onSubmit={(e) => { e.preventDefault(); handleSend(); }}
                       className="flex gap-2"
                     >
-                      <Input
+                      <input
                         ref={inputRef}
                         placeholder="Type a message..."
                         value={newMessage}
                         onChange={(e) => { setNewMessage(e.target.value); broadcastTyping(); }}
-                        className="flex-1"
+                        className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         autoComplete="off"
+                        autoCorrect="on"
+                        autoCapitalize="sentences"
+                        spellCheck={true}
+                        enterKeyHint="send"
+                        data-form-type="other"
                       />
                       {newMessage.trim() ? (
                         <Button
