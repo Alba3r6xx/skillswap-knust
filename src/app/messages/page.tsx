@@ -45,12 +45,101 @@ function ReadReceipt({ msg, isMine }: { msg: Message; isMine: boolean }) {
 }
 
 function VoiceMessage({ src, isMine }: { src: string; isMine: boolean }) {
-  const [playing, setPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [dur, setDur] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const barsRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const [playing, setPlaying] = useState(false);
+  const [dur, setDur] = useState(0);
+  const [displayTime, setDisplayTime] = useState(0);
+  const progressRef = useRef(0);
+
+  const fmt = (s: number) => {
+    if (!s || !isFinite(s) || isNaN(s)) return "0:00";
+    return `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
+  };
+
+  // Deterministic bar heights from URL hash
+  const barsData = useRef(
+    Array.from({ length: 36 }, (_, i) => {
+      const s = src.length > 10 ? src : src + "pad123456789";
+      const c1 = s.charCodeAt((i * 3) % s.length);
+      const c2 = s.charCodeAt((i * 7 + 5) % s.length);
+      const c3 = s.charCodeAt((i * 11 + 3) % s.length);
+      const v = ((c1 * 31 + c2 * 17 + c3 * 13 + i * 7) % 100) / 100;
+      return 0.15 + v * 0.85;
+    })
+  ).current;
+
+  // Canvas-based waveform rendering — silky smooth at 60fps
+  const drawWaveform = useCallback((pct: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    const barCount = barsData.length;
+    const gap = 2;
+    const barW = Math.max(2, (w - gap * (barCount - 1)) / barCount);
+    const maxH = h - 4;
+    const filledColor = isMine ? "rgba(255,255,255,1)" : "#f59e0b";
+    const unfilledColor = isMine ? "rgba(255,255,255,0.25)" : "rgba(161,161,170,0.5)";
+
+    for (let i = 0; i < barCount; i++) {
+      const x = i * (barW + gap);
+      const barH = Math.max(3, barsData[i] * maxH);
+      const barPct = (i / barCount) * 100;
+      ctx.fillStyle = pct > barPct ? filledColor : unfilledColor;
+      ctx.beginPath();
+      ctx.roundRect(x, h / 2 - barH / 2, barW, barH, barW / 2);
+      ctx.fill();
+    }
+
+    // Seek dot
+    const dotX = (pct / 100) * w;
+    const dotR = 5;
+    ctx.fillStyle = isMine ? "#ffffff" : "#f59e0b";
+    ctx.shadowColor = "rgba(0,0,0,0.3)";
+    ctx.shadowBlur = 4;
+    ctx.beginPath();
+    ctx.arc(Math.max(dotR, Math.min(w - dotR, dotX)), h / 2, dotR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }, [isMine, barsData]);
+
+  // Animation loop — runs at 60fps while playing
+  useEffect(() => {
+    const tick = () => {
+      const a = audioRef.current;
+      if (a && !a.paused && dur > 0 && isFinite(dur)) {
+        const pct = (a.currentTime / dur) * 100;
+        progressRef.current = pct;
+        setDisplayTime(a.currentTime);
+        drawWaveform(pct);
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    if (playing) {
+      rafRef.current = requestAnimationFrame(tick);
+    }
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [playing, dur, drawWaveform]);
+
+  // Draw initial state
+  useEffect(() => {
+    drawWaveform(progressRef.current);
+  }, [drawWaveform]);
 
   const toggle = () => {
     const a = audioRef.current;
@@ -58,30 +147,17 @@ function VoiceMessage({ src, isMine }: { src: string; isMine: boolean }) {
     if (playing) { a.pause(); } else { a.play().catch(() => {}); }
   };
 
-  const fmt = (s: number) => {
-    if (!s || !isFinite(s) || isNaN(s)) return "0:00";
-    return `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
-  };
-
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleSeek = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const a = audioRef.current;
-    const el = barsRef.current;
-    if (!a || !el || !dur || !isFinite(dur)) return;
-    const rect = el.getBoundingClientRect();
+    const canvas = canvasRef.current;
+    if (!a || !canvas || !dur || !isFinite(dur)) return;
+    const rect = canvas.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     a.currentTime = pct * dur;
-    setProgress(pct * 100);
+    progressRef.current = pct * 100;
+    setDisplayTime(a.currentTime);
+    drawWaveform(pct * 100);
   };
-
-  // Generate deterministic waveform bars — more variation like WhatsApp
-  const bars = Array.from({ length: 40 }, (_, i) => {
-    const s = src.length > 10 ? src : src + "padding123";
-    const c1 = s.charCodeAt((i * 3) % s.length);
-    const c2 = s.charCodeAt((i * 7 + 5) % s.length);
-    const c3 = s.charCodeAt((i * 11 + 3) % s.length);
-    const hash = ((c1 * 31 + c2 * 17 + c3 * 13 + i * 7) % 100) / 100;
-    return 3 + hash * 20;
-  });
 
   return (
     <div className="flex items-center gap-3 min-w-[220px] max-w-[280px]">
@@ -97,65 +173,37 @@ function VoiceMessage({ src, isMine }: { src: string; isMine: boolean }) {
           const a = audioRef.current;
           if (a && isFinite(a.duration) && a.duration > 0) setDur(a.duration);
         }}
-        onTimeUpdate={() => {
-          const a = audioRef.current;
-          if (!a) return;
-          setCurrentTime(a.currentTime);
-          if (dur > 0 && isFinite(dur)) setProgress((a.currentTime / dur) * 100);
-        }}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
-        onEnded={() => { setPlaying(false); setProgress(0); setCurrentTime(0); }}
+        onEnded={() => {
+          setPlaying(false);
+          progressRef.current = 0;
+          setDisplayTime(0);
+          drawWaveform(0);
+        }}
       />
-      {/* Play/Pause */}
       <button
         onClick={toggle}
-        className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 transition-all active:scale-95 ${
+        className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 active:scale-95 ${
           isMine
-            ? "bg-white/20 hover:bg-white/30 backdrop-blur-sm"
+            ? "bg-white/20 hover:bg-white/30"
             : "bg-amber-500 hover:bg-amber-600 shadow-sm"
         }`}
       >
         {playing
-          ? <Pause className="h-4.5 w-4.5 text-white" fill="white" />
-          : <Play className="h-4.5 w-4.5 ml-0.5 text-white" fill="white" />
+          ? <Pause className="h-4 w-4 text-white" fill="white" />
+          : <Play className="h-4 w-4 ml-0.5 text-white" fill="white" />
         }
       </button>
-      {/* Waveform + time */}
       <div className="flex-1 min-w-0">
-        <div
-          ref={barsRef}
-          className="flex items-center gap-[1px] h-7 cursor-pointer relative"
+        <canvas
+          ref={canvasRef}
+          className="w-full h-7 cursor-pointer"
           onClick={handleSeek}
-        >
-          {bars.map((h, i) => {
-            const pct = (i / bars.length) * 100;
-            const filled = progress > pct;
-            return (
-              <span
-                key={i}
-                className={`w-[2px] rounded-full ${
-                  filled
-                    ? isMine ? "bg-white" : "bg-amber-500"
-                    : isMine ? "bg-white/25" : "bg-gray-300 dark:bg-zinc-600"
-                }`}
-                style={{ height: `${h}px` }}
-              />
-            );
-          })}
-          {/* Seek dot */}
-          <span
-            className={`absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full shadow-md ${
-              isMine ? "bg-white" : "bg-amber-500"
-            }`}
-            style={{ left: `${Math.min(progress, 98)}%` }}
-          />
-        </div>
-        <div className="flex items-center justify-between mt-0.5">
-          <span className={`text-[10px] tabular-nums ${isMine ? "text-white/70" : "text-muted-foreground"}`}>
-            {playing ? fmt(currentTime) : fmt(dur)}
-          </span>
-        </div>
+        />
+        <span className={`text-[10px] tabular-nums block mt-0.5 ${isMine ? "text-white/70" : "text-muted-foreground"}`}>
+          {playing ? fmt(displayTime) : fmt(dur)}
+        </span>
       </div>
     </div>
   );
@@ -741,7 +789,7 @@ function MessagesContent() {
                         value={newMessage}
                         onChange={(e) => { setNewMessage(e.target.value); broadcastTyping(); }}
                         onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                        className="flex-1 h-11 rounded-full bg-gray-100 dark:bg-zinc-800 px-4 text-sm outline-none placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:ring-2 focus:ring-amber-500/30"
+                        className="flex-1 h-11 rounded-full bg-gray-100 dark:bg-zinc-800 px-4 text-base outline-none placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:ring-2 focus:ring-amber-500/30"
                         autoComplete="off"
                         autoCorrect="on"
                         autoCapitalize="sentences"
