@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { Profile, Session, Message, Notification, Badge } from "@/lib/types";
+import { Profile, Session, Message, Notification, Badge, Reaction } from "@/lib/types";
 
 // ─── Profiles ───────────────────────────────────────────────
 
@@ -222,6 +222,77 @@ export async function togglePinMessage(messageId: string, pinned: boolean) {
     .update({ pinned })
     .eq("id", messageId);
   return { error };
+}
+
+export async function editMessage(messageId: string, newContent: string) {
+  const { error } = await supabase
+    .from("messages")
+    .update({ content: newContent, edited_at: new Date().toISOString() })
+    .eq("id", messageId);
+  return { error };
+}
+
+export async function forwardMessage(originalMsg: Message, senderId: string, receiverId: string) {
+  const row: Record<string, unknown> = {
+    sender_id: senderId,
+    receiver_id: receiverId,
+    content: originalMsg.content,
+    type: originalMsg.type,
+    forwarded_from: originalMsg.id,
+  };
+  const { data, error } = await supabase.from("messages").insert(row).select().single();
+  if (data && !error) {
+    fetch("/api/push/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ recipientId: receiverId, title: "New Message", body: "Forwarded message", url: "/messages" }),
+    }).catch(() => {});
+  }
+  return { data: data as Message | null, error };
+}
+
+export async function addReaction(messageId: string, userId: string, emoji: string) {
+  const { data, error } = await supabase
+    .from("message_reactions")
+    .upsert({ message_id: messageId, user_id: userId, emoji }, { onConflict: "message_id,user_id,emoji" })
+    .select()
+    .single();
+  return { data: data as Reaction | null, error };
+}
+
+export async function removeReaction(messageId: string, userId: string, emoji: string) {
+  const { error } = await supabase
+    .from("message_reactions")
+    .delete()
+    .eq("message_id", messageId)
+    .eq("user_id", userId)
+    .eq("emoji", emoji);
+  return { error };
+}
+
+export async function getReactionsForMessages(messageIds: string[]): Promise<Reaction[]> {
+  if (messageIds.length === 0) return [];
+  const { data } = await supabase
+    .from("message_reactions")
+    .select("*")
+    .in("message_id", messageIds);
+  return (data as Reaction[]) || [];
+}
+
+export async function searchMessages(userId: string, peerId: string, query: string): Promise<Message[]> {
+  const { data } = await supabase
+    .from("messages")
+    .select("*")
+    .or(`and(sender_id.eq.${userId},receiver_id.eq.${peerId}),and(sender_id.eq.${peerId},receiver_id.eq.${userId})`)
+    .ilike("content", `%${query}%`)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  return (data as Message[]) || [];
+}
+
+export async function updateLastSeen(userId: string) {
+  await supabase.from("profiles").update({ last_seen: new Date().toISOString() }).eq("id", userId);
 }
 
 export async function markMessagesAsDelivered(userId: string) {

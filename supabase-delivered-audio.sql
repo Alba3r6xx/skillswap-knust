@@ -12,6 +12,26 @@ ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS reply_sender_id uuid;
 ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
 ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS pinned boolean DEFAULT false;
 
+-- 6. Edit & forward columns
+ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS edited_at timestamptz;
+ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS forwarded_from uuid REFERENCES public.messages(id) ON DELETE SET NULL;
+
+-- 7. Message reactions table
+CREATE TABLE IF NOT EXISTS public.message_reactions (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  message_id uuid NOT NULL REFERENCES public.messages(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  emoji text NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(message_id, user_id, emoji)
+);
+
+ALTER TABLE public.message_reactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view reactions" ON public.message_reactions FOR SELECT USING (true);
+CREATE POLICY "Users can add reactions" ON public.message_reactions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can remove own reactions" ON public.message_reactions FOR DELETE USING (auth.uid() = user_id);
+
 -- 3. Create storage bucket for voice notes
 INSERT INTO storage.buckets (id, name, public) VALUES ('audio-messages', 'audio-messages', true)
 ON CONFLICT (id) DO NOTHING;

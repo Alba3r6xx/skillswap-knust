@@ -55,6 +55,17 @@ export interface Message {
   reply_sender_id?: string | null;
   deleted_at?: string | null;
   pinned?: boolean;
+  edited_at?: string | null;
+  forwarded_from?: string | null;
+  reactions?: Reaction[];
+}
+
+export interface Reaction {
+  id: string;
+  message_id: string;
+  user_id: string;
+  emoji: string;
+  created_at: string;
 }
 
 export interface Notification {

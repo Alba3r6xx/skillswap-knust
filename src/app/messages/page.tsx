@@ -4,8 +4,8 @@ import { Suspense, useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { getConversations, getMessagesBetween, sendMessage, markMessagesAsRead, getProfileById, deleteMessage, togglePinMessage } from "@/lib/data";
-import { Message, Profile } from "@/lib/types";
+import { getConversations, getMessagesBetween, sendMessage, markMessagesAsRead, getProfileById, deleteMessage, togglePinMessage, editMessage, forwardMessage, addReaction, removeReaction, getReactionsForMessages, searchMessages, updateLastSeen, getTimeSinceLastSeen } from "@/lib/data";
+import { Message, Profile, Reaction } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,10 @@ import {
   Pin,
   PinOff,
   Copy,
+  Search,
+  Forward,
+  Pencil,
+  SmilePlus,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -266,6 +270,13 @@ function MessagesContent() {
   const [contextMenu, setContextMenu] = useState<{ msg: Message; x: number; y: number } | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTouchDevice = useRef(false);
+  const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
+  const [editingMsg, setEditingMsg] = useState<Message | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Message[]>([]);
+  const [forwardMsg, setForwardMsg] = useState<Message | null>(null);
+  const QUICK_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
   useEffect(() => {
     isTouchDevice.current = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -373,7 +384,7 @@ function MessagesContent() {
         (payload) => {
           const updated = payload.new as Message;
           setMessages((prev) =>
-            prev.map((m) => (m.id === updated.id ? { ...m, read: updated.read, delivered: updated.delivered, deleted_at: updated.deleted_at, content: updated.content, pinned: updated.pinned } : m))
+            prev.map((m) => (m.id === updated.id ? { ...m, read: updated.read, delivered: updated.delivered, deleted_at: updated.deleted_at, content: updated.content, pinned: updated.pinned, edited_at: updated.edited_at } : m))
           );
         }
       )
@@ -389,6 +400,28 @@ function MessagesContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Fetch reactions when messages change
+  useEffect(() => {
+    if (messages.length === 0) { setReactions({}); return; }
+    const ids = messages.map(m => m.id);
+    getReactionsForMessages(ids).then(rxns => {
+      const map: Record<string, Reaction[]> = {};
+      rxns.forEach(r => {
+        if (!map[r.message_id]) map[r.message_id] = [];
+        map[r.message_id].push(r);
+      });
+      setReactions(map);
+    });
+  }, [messages]);
+
+  // Update last_seen periodically
+  useEffect(() => {
+    if (!user) return;
+    updateLastSeen(user.id);
+    const interval = setInterval(() => updateLastSeen(user.id), 60000);
+    return () => clearInterval(interval);
+  }, [user]);
+
   const getReplyPreview = (msg: Message) => {
     if (msg.type === "audio") return "🎤 Voice note";
     if (msg.type === "image") return "📷 Photo";
@@ -398,6 +431,18 @@ function MessagesContent() {
 
   const handleSend = async () => {
     if (!newMessage.trim() || !user || !selectedPeerId || sending) return;
+    // Edit mode
+    if (editingMsg) {
+      setSending(true);
+      const { error } = await editMessage(editingMsg.id, newMessage.trim());
+      if (error) { toast.error("Failed to edit"); }
+      else { setMessages(prev => prev.map(m => m.id === editingMsg.id ? { ...m, content: newMessage.trim(), edited_at: new Date().toISOString() } : m)); }
+      setEditingMsg(null);
+      setNewMessage("");
+      if (inputRef.current) inputRef.current.textContent = "";
+      setSending(false);
+      return;
+    }
     setSending(true);
     const payload: Parameters<typeof sendMessage>[0] = {
       sender_id: user.id,
@@ -719,6 +764,89 @@ function MessagesContent() {
     navigator.clipboard.writeText(text).then(() => toast.success("Copied")).catch(() => {});
   };
 
+  // Emoji reactions handler
+  const handleReaction = async (msgId: string, emoji: string) => {
+    if (!user) return;
+    setContextMenu(null);
+    const existing = reactions[msgId]?.find(r => r.user_id === user.id && r.emoji === emoji);
+    if (existing) {
+      setReactions(prev => ({ ...prev, [msgId]: (prev[msgId] || []).filter(r => r.id !== existing.id) }));
+      await removeReaction(msgId, user.id, emoji);
+    } else {
+      const temp: Reaction = { id: "temp-" + Date.now(), message_id: msgId, user_id: user.id, emoji, created_at: new Date().toISOString() };
+      setReactions(prev => ({ ...prev, [msgId]: [...(prev[msgId] || []), temp] }));
+      const { data } = await addReaction(msgId, user.id, emoji);
+      if (data) {
+        setReactions(prev => ({ ...prev, [msgId]: (prev[msgId] || []).map(r => r.id === temp.id ? data : r) }));
+      }
+    }
+  };
+
+  // Edit message
+  const handleEdit = (msg: Message) => {
+    setContextMenu(null);
+    setEditingMsg(msg);
+    setNewMessage(msg.content);
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.textContent = msg.content;
+        inputRef.current.focus();
+      }
+    }, 50);
+  };
+
+  // Forward message
+  const handleForwardSelect = (msg: Message) => {
+    setContextMenu(null);
+    setForwardMsg(msg);
+  };
+
+  const handleForwardTo = async (peerId: string) => {
+    if (!forwardMsg || !user) return;
+    await forwardMessage(forwardMsg, user.id, peerId);
+    toast.success("Message forwarded");
+    setForwardMsg(null);
+    fetchConversations();
+  };
+
+  // Search messages
+  const handleSearchMessages = async (query: string) => {
+    setSearchQuery(query);
+    if (!user || !selectedPeerId || query.length < 2) { setSearchResults([]); return; }
+    const results = await searchMessages(user.id, selectedPeerId, query);
+    setSearchResults(results);
+  };
+
+  // Format message text with WhatsApp-style formatting
+  const formatMessageText = (text: string): React.ReactNode => {
+    const regex = /(\*[^*]+\*)|(_[^_]+_)|(~[^~]+~)|(`[^`]+`)/g;
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let key = 0;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
+      const m = match[0];
+      if (m.startsWith("*") && m.endsWith("*")) parts.push(<strong key={key++}>{m.slice(1, -1)}</strong>);
+      else if (m.startsWith("_") && m.endsWith("_")) parts.push(<em key={key++}>{m.slice(1, -1)}</em>);
+      else if (m.startsWith("~") && m.endsWith("~")) parts.push(<s key={key++}>{m.slice(1, -1)}</s>);
+      else if (m.startsWith("`") && m.endsWith("`")) parts.push(<code key={key++} className="px-1 py-0.5 rounded bg-black/10 dark:bg-white/10 text-[13px] font-mono">{m.slice(1, -1)}</code>);
+      lastIndex = match.index + m.length;
+    }
+    if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+    return parts.length > 0 ? <>{parts}</> : text;
+  };
+
+  // Date separator helper
+  const getDateLabel = (date: Date) => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (date.toDateString() === today.toDateString()) return "Today";
+    if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+    return date.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+  };
+
   // Pinned messages
   const pinnedMessages = messages.filter((m) => m.pinned && !m.deleted_at);
 
@@ -859,37 +987,87 @@ function MessagesContent() {
             ) : (
               <>
                 {/* Chat Header */}
-                <div className="flex items-center gap-3 px-3 py-2 border-b shrink-0 md:pt-2" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}>
+                <div className="flex items-center gap-2 px-3 py-2 border-b shrink-0 md:pt-2" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="md:hidden shrink-0"
+                    className="md:hidden shrink-0 h-8 w-8"
                     onClick={() => setSelectedPeerId(null)}
                   >
                     <ArrowLeft className="h-4 w-4" />
                   </Button>
                   {selectedPeer && (
-                    <Link href={`/profile/${selectedPeerId}`} className="flex items-center gap-3 min-w-0">
-                      <Avatar className="h-9 w-9 shrink-0">
-                        {selectedPeer.avatar_url ? (
-                          <img src={selectedPeer.avatar_url} alt={selectedPeer.name} className="h-full w-full object-cover rounded-full" />
-                        ) : (
-                          <AvatarFallback className="bg-amber-100 text-amber-700 text-sm">
-                            {selectedPeer.name.split(" ").map((n) => n[0]).join("").toUpperCase()}
-                          </AvatarFallback>
+                    <Link href={`/profile/${selectedPeerId}`} className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="relative shrink-0">
+                        <Avatar className="h-9 w-9">
+                          {selectedPeer.avatar_url ? (
+                            <img src={selectedPeer.avatar_url} alt={selectedPeer.name} className="h-full w-full object-cover rounded-full" />
+                          ) : (
+                            <AvatarFallback className="bg-amber-100 text-amber-700 text-sm">
+                              {selectedPeer.name.split(" ").map((n) => n[0]).join("").toUpperCase()}
+                            </AvatarFallback>
+                          )}
+                        </Avatar>
+                        {getTimeSinceLastSeen(selectedPeer.last_seen) === "Online now" && (
+                          <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-background" />
                         )}
-                      </Avatar>
+                      </div>
                       <div className="min-w-0">
                         <p className="text-sm font-semibold truncate">{selectedPeer.name}</p>
                         {peerTyping ? (
                           <p className="text-xs text-green-600 dark:text-green-400 animate-pulse">typing...</p>
                         ) : (
-                          <p className="text-xs text-muted-foreground truncate">{selectedPeer.faculty}</p>
+                          <p className="text-xs text-muted-foreground truncate">{getTimeSinceLastSeen(selectedPeer.last_seen)}</p>
                         )}
                       </div>
                     </Link>
                   )}
+                  <button
+                    className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center justify-center shrink-0"
+                    onClick={() => { setSearchOpen(!searchOpen); setSearchQuery(""); setSearchResults([]); }}
+                  >
+                    <Search className="h-4 w-4 text-muted-foreground" />
+                  </button>
                 </div>
+
+                {/* Search bar */}
+                {searchOpen && (
+                  <div className="px-3 py-2 border-b shrink-0 bg-background">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Search messages..."
+                        value={searchQuery}
+                        onChange={(e) => handleSearchMessages(e.target.value)}
+                        className="w-full h-8 pl-9 pr-8 rounded-lg bg-gray-100 dark:bg-zinc-800 text-sm outline-none focus:ring-2 focus:ring-amber-500/30"
+                        autoFocus
+                      />
+                      <button className="absolute right-2 top-1/2 -translate-y-1/2" onClick={() => { setSearchOpen(false); setSearchQuery(""); setSearchResults([]); }}>
+                        <X className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    </div>
+                    {searchResults.length > 0 && (
+                      <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
+                        {searchResults.map((r) => (
+                          <button
+                            key={r.id}
+                            className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 text-xs"
+                            onClick={() => {
+                              const el = document.getElementById(`msg-${r.id}`);
+                              el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                              setSearchOpen(false);
+                            }}
+                          >
+                            <span className="text-muted-foreground">{new Date(r.created_at).toLocaleDateString([], { month: "short", day: "numeric" })}</span>
+                            {" — "}
+                            <span className="truncate">{r.content.length > 60 ? r.content.slice(0, 60) + "..." : r.content}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Pinned messages banner */}
                 {pinnedMessages.length > 0 && (
@@ -938,97 +1116,147 @@ function MessagesContent() {
                     const isDoc = !isDeleted && msg.type === "document";
                     const showTail = !sameSender;
                     const hasReply = !!msg.reply_to && !!msg.reply_preview;
+                    const msgReactions = reactions[msg.id] || [];
+                    const isForwarded = !!msg.forwarded_from;
+                    const isEdited = !!msg.edited_at;
+
+                    // Date separator
+                    const msgDate = new Date(msg.created_at);
+                    const prevMsgDate = prevMsg ? new Date(prevMsg.created_at) : null;
+                    const showDateSep = !prevMsgDate || msgDate.toDateString() !== prevMsgDate.toDateString();
 
                     return (
-                      <div
-                        key={msg.id}
-                        id={`msg-${msg.id}`}
-                        className={`msg-bubble flex ${isMine ? "justify-end" : "justify-start"} ${showTail ? "mt-2.5" : "mt-[3px]"}`}
-                        onContextMenu={(e) => { e.preventDefault(); openContextMenu(msg, e.clientX, e.clientY); }}
-                        onTouchStart={(e) => {
-                          const t = e.touches[0];
-                          longPressTimer.current = setTimeout(() => {
-                            openContextMenu(msg, t.clientX, t.clientY);
-                            if (navigator.vibrate) navigator.vibrate(30);
-                          }, 400);
-                        }}
-                        onTouchEnd={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
-                        onTouchMove={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
-                      >
-                        <div
-                          className={`relative max-w-[85%] sm:max-w-[65%] text-[14.5px] ${
-                            isDeleted ? "px-3 py-1.5"
-                              : isImage ? "p-1 w-[260px] max-w-full"
-                              : isAudio ? "px-2.5 py-2 w-[280px] max-w-full"
-                              : isDoc ? "px-3 py-2 w-[260px] max-w-full"
-                              : "px-3 py-1.5"
-                          } ${
-                            isMine
-                              ? `${isDeleted ? "bg-amber-200/50 dark:bg-amber-900/20" : "bg-amber-500 dark:bg-amber-600"} text-white shadow-sm ${
-                                  showTail ? "rounded-xl rounded-tr-sm" : "rounded-xl"
-                                }`
-                              : `${isDeleted ? "bg-gray-100 dark:bg-zinc-800/50" : "bg-white dark:bg-zinc-800"} shadow-sm ${
-                                  showTail ? "rounded-xl rounded-tl-sm" : "rounded-xl"
-                                }`
-                          }`}
-                        >
-                          {/* Reply reference */}
-                          {hasReply && !isDeleted && (
-                            <div className={`mb-0.5 px-1.5 py-0.5 rounded border-l-2 ${
-                              isMine
-                                ? "bg-white/10 border-white/30 text-white/70"
-                                : "bg-gray-50 dark:bg-zinc-700/40 border-amber-400 text-muted-foreground"
-                            }`}>
-                              <p className={`font-semibold text-[10px] leading-tight ${isMine ? "text-white/90" : "text-amber-600 dark:text-amber-400"}`}>
-                                {msg.reply_sender_id === user.id ? "You" : selectedPeer?.name?.split(" ")[0] || ""}
-                              </p>
-                              <p className="truncate text-[11px] leading-tight">{msg.reply_preview}</p>
-                            </div>
-                          )}
-
-                          {isDeleted ? (
-                            <p className={`italic text-[13px] ${isMine ? "text-white/50" : "text-muted-foreground"}`}>
-                              This message was deleted
-                            </p>
-                          ) : isImage ? (
-                            <button type="button" onClick={() => setLightboxSrc(msg.content)} className="block w-full">
-                              <img
-                                src={msg.content}
-                                alt="Shared image"
-                                className="rounded-lg w-full max-h-[300px] object-cover cursor-pointer"
-                                loading="lazy"
-                              />
-                            </button>
-                          ) : isAudio ? (
-                            <VoiceMessage src={msg.content} isMine={isMine} />
-                          ) : isDoc ? (() => {
-                            const doc = parseDocContent(msg.content);
-                            const ext = doc.name.split(".").pop()?.toUpperCase() || "FILE";
-                            return (
-                              <a href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group">
-                                <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${isMine ? "bg-white/20" : "bg-amber-100 dark:bg-amber-500/20"}`}>
-                                  <FileText className={`h-5 w-5 ${isMine ? "text-white" : "text-amber-600 dark:text-amber-400"}`} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className={`text-sm font-medium truncate ${isMine ? "text-white" : ""}`}>{doc.name}</p>
-                                  <p className={`text-[11px] ${isMine ? "text-white/60" : "text-muted-foreground"}`}>{ext} · {formatFileSize(doc.size)}</p>
-                                </div>
-                                <Download className={`h-4 w-4 shrink-0 opacity-60 group-hover:opacity-100 ${isMine ? "text-white" : "text-muted-foreground"}`} />
-                              </a>
-                            );
-                          })() : (
-                            <p className="break-words whitespace-pre-wrap">{msg.content}</p>
-                          )}
-                          <div className={`flex items-center justify-end gap-0.5 -mb-0.5 ${
-                            isImage ? "mt-0.5 px-1" : isAudio || isDoc ? "mt-0" : "mt-0.5"
-                          } ${
-                            isMine ? "text-white/60" : "text-gray-400 dark:text-zinc-500"
-                          }`}>
-                            {msg.pinned && !isDeleted && <Pin className="h-2 w-2 shrink-0" />}
-                            <span className="text-[10px] leading-none">
-                              {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      <div key={msg.id}>
+                        {showDateSep && (
+                          <div className="flex items-center justify-center my-3">
+                            <span className="text-[11px] text-muted-foreground bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm px-3 py-0.5 rounded-full shadow-sm">
+                              {getDateLabel(msgDate)}
                             </span>
-                            {!isDeleted && <ReadReceipt msg={msg} isMine={isMine} />}
+                          </div>
+                        )}
+                        <div
+                          id={`msg-${msg.id}`}
+                          className={`msg-bubble flex ${isMine ? "justify-end" : "justify-start"} ${showTail ? "mt-2.5" : "mt-[3px]"}`}
+                          onContextMenu={(e) => { e.preventDefault(); openContextMenu(msg, e.clientX, e.clientY); }}
+                          onTouchStart={(e) => {
+                            const t = e.touches[0];
+                            longPressTimer.current = setTimeout(() => {
+                              openContextMenu(msg, t.clientX, t.clientY);
+                              if (navigator.vibrate) navigator.vibrate(30);
+                            }, 400);
+                          }}
+                          onTouchEnd={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
+                          onTouchMove={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
+                        >
+                          <div className="max-w-[85%] sm:max-w-[65%]">
+                            <div
+                              className={`relative text-[14.5px] ${
+                                isDeleted ? "px-3 py-1.5"
+                                  : isImage ? "p-1 w-[260px] max-w-full"
+                                  : isAudio ? "px-2.5 py-2 w-[280px] max-w-full"
+                                  : isDoc ? "px-3 py-2 w-[260px] max-w-full"
+                                  : "px-3 py-1.5"
+                              } ${
+                                isMine
+                                  ? `${isDeleted ? "bg-amber-200/50 dark:bg-amber-900/20" : "bg-gradient-to-br from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700"} text-white shadow-sm ${
+                                      showTail ? "rounded-2xl rounded-tr-sm" : "rounded-2xl"
+                                    }`
+                                  : `${isDeleted ? "bg-gray-100 dark:bg-zinc-800/50" : "bg-white dark:bg-zinc-800"} shadow-sm ${
+                                      showTail ? "rounded-2xl rounded-tl-sm" : "rounded-2xl"
+                                    }`
+                              }`}
+                            >
+                              {/* Forwarded indicator */}
+                              {isForwarded && !isDeleted && (
+                                <p className={`text-[10px] italic mb-0.5 flex items-center gap-1 ${isMine ? "text-white/50" : "text-muted-foreground"}`}>
+                                  <Forward className="h-2.5 w-2.5" /> Forwarded
+                                </p>
+                              )}
+
+                              {/* Reply reference */}
+                              {hasReply && !isDeleted && (
+                                <button
+                                  className={`w-full text-left mb-0.5 px-1.5 py-0.5 rounded border-l-2 ${
+                                    isMine
+                                      ? "bg-white/10 border-white/30 text-white/70"
+                                      : "bg-gray-50 dark:bg-zinc-700/40 border-amber-400 text-muted-foreground"
+                                  }`}
+                                  onClick={() => {
+                                    const el = document.getElementById(`msg-${msg.reply_to}`);
+                                    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                                  }}
+                                >
+                                  <p className={`font-semibold text-[10px] leading-tight ${isMine ? "text-white/90" : "text-amber-600 dark:text-amber-400"}`}>
+                                    {msg.reply_sender_id === user.id ? "You" : selectedPeer?.name?.split(" ")[0] || ""}
+                                  </p>
+                                  <p className="truncate text-[11px] leading-tight">{msg.reply_preview}</p>
+                                </button>
+                              )}
+
+                              {isDeleted ? (
+                                <p className={`italic text-[13px] ${isMine ? "text-white/50" : "text-muted-foreground"}`}>
+                                  This message was deleted
+                                </p>
+                              ) : isImage ? (
+                                <button type="button" onClick={() => setLightboxSrc(msg.content)} className="block w-full">
+                                  <img src={msg.content} alt="Shared image" className="rounded-xl w-full max-h-[300px] object-cover cursor-pointer" loading="lazy" />
+                                </button>
+                              ) : isAudio ? (
+                                <VoiceMessage src={msg.content} isMine={isMine} />
+                              ) : isDoc ? (() => {
+                                const doc = parseDocContent(msg.content);
+                                const ext = doc.name.split(".").pop()?.toUpperCase() || "FILE";
+                                return (
+                                  <a href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group">
+                                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${isMine ? "bg-white/20" : "bg-amber-100 dark:bg-amber-500/20"}`}>
+                                      <FileText className={`h-5 w-5 ${isMine ? "text-white" : "text-amber-600 dark:text-amber-400"}`} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className={`text-sm font-medium truncate ${isMine ? "text-white" : ""}`}>{doc.name}</p>
+                                      <p className={`text-[11px] ${isMine ? "text-white/60" : "text-muted-foreground"}`}>{ext} · {formatFileSize(doc.size)}</p>
+                                    </div>
+                                    <Download className={`h-4 w-4 shrink-0 opacity-60 group-hover:opacity-100 ${isMine ? "text-white" : "text-muted-foreground"}`} />
+                                  </a>
+                                );
+                              })() : (
+                                <p className="break-words whitespace-pre-wrap">{formatMessageText(msg.content)}</p>
+                              )}
+                              <div className={`flex items-center justify-end gap-0.5 -mb-0.5 ${
+                                isImage ? "mt-0.5 px-1" : isAudio || isDoc ? "mt-0" : "mt-0.5"
+                              } ${
+                                isMine ? "text-white/60" : "text-gray-400 dark:text-zinc-500"
+                              }`}>
+                                {msg.pinned && !isDeleted && <Pin className="h-2 w-2 shrink-0" />}
+                                {isEdited && !isDeleted && <span className="text-[9px] leading-none mr-0.5">edited</span>}
+                                <span className="text-[10px] leading-none">
+                                  {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                </span>
+                                {!isDeleted && <ReadReceipt msg={msg} isMine={isMine} />}
+                              </div>
+                            </div>
+
+                            {/* Reactions */}
+                            {msgReactions.length > 0 && (
+                              <div className={`flex flex-wrap gap-1 mt-0.5 ${isMine ? "justify-end" : "justify-start"}`}>
+                                {Object.entries(msgReactions.reduce<Record<string, { emoji: string; count: number; byMe: boolean }>>((acc, r) => {
+                                  if (!acc[r.emoji]) acc[r.emoji] = { emoji: r.emoji, count: 0, byMe: false };
+                                  acc[r.emoji].count++;
+                                  if (r.user_id === user.id) acc[r.emoji].byMe = true;
+                                  return acc;
+                                }, {})).map(([emoji, { count, byMe }]) => (
+                                  <button
+                                    key={emoji}
+                                    className={`inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full border transition-colors ${
+                                      byMe ? "bg-amber-100 dark:bg-amber-500/20 border-amber-300 dark:border-amber-500/40" : "bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700"
+                                    }`}
+                                    onClick={() => handleReaction(msg.id, emoji)}
+                                  >
+                                    <span>{emoji}</span>
+                                    {count > 1 && <span className="text-[10px] text-muted-foreground">{count}</span>}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1037,8 +1265,24 @@ function MessagesContent() {
                   <div ref={messagesEndRef} />
                 </div>
 
+                {/* Edit mode bar */}
+                {editingMsg && (
+                  <div className="px-3 pt-2 pb-0 border-t shrink-0 bg-background">
+                    <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-500/5 rounded-xl px-3 py-2 border-l-2 border-blue-500">
+                      <Pencil className="h-4 w-4 text-blue-500 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-semibold text-blue-600 dark:text-blue-400">Editing message</p>
+                        <p className="text-xs text-muted-foreground truncate">{editingMsg.content}</p>
+                      </div>
+                      <button className="h-6 w-6 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 flex items-center justify-center shrink-0" onClick={() => { setEditingMsg(null); setNewMessage(""); if (inputRef.current) inputRef.current.textContent = ""; }}>
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Reply preview */}
-                {replyTo && (
+                {replyTo && !editingMsg && (
                   <div className="px-3 pt-2 pb-0 border-t shrink-0 bg-background">
                     <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-500/5 rounded-xl px-3 py-2 border-l-2 border-amber-500">
                       <Reply className="h-4 w-4 text-amber-500 shrink-0 scale-x-[-1]" />
@@ -1208,35 +1452,106 @@ function MessagesContent() {
       {/* Context menu */}
       {contextMenu && (
         <div
-          className="fixed inset-0 z-[90] bg-black/20"
+          className="fixed inset-0 z-[90] bg-black/20 backdrop-blur-[2px]"
           onClick={() => setContextMenu(null)}
           onContextMenu={(e) => { e.preventDefault(); setContextMenu(null); }}
         >
           <div
-            className="absolute bg-white dark:bg-zinc-800 rounded-xl shadow-2xl border dark:border-zinc-700 py-1 min-w-[150px] z-[91] animate-in fade-in zoom-in-95 duration-150"
+            className="absolute bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl border dark:border-zinc-700 min-w-[180px] z-[91] animate-in fade-in zoom-in-95 duration-150 overflow-hidden"
             style={{
-              left: `clamp(8px, ${contextMenu.x}px, calc(100vw - 168px))`,
-              top: `clamp(8px, ${contextMenu.y}px, calc(100vh - 200px))`,
+              left: `clamp(8px, ${contextMenu.x}px, calc(100vw - 196px))`,
+              top: `clamp(8px, ${contextMenu.y}px, calc(100vh - 320px))`,
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button className="flex items-center gap-3 w-full px-3.5 py-2 text-[13px] hover:bg-gray-100 dark:hover:bg-zinc-700 text-left active:bg-gray-200 dark:active:bg-zinc-600" onClick={() => handleReply(contextMenu.msg)}>
-              <Reply className="h-4 w-4 text-muted-foreground" /> Reply
-            </button>
-            {contextMenu.msg.type === "text" && (
-              <button className="flex items-center gap-3 w-full px-3.5 py-2 text-[13px] hover:bg-gray-100 dark:hover:bg-zinc-700 text-left active:bg-gray-200 dark:active:bg-zinc-600" onClick={() => handleCopy(contextMenu.msg)}>
-                <Copy className="h-4 w-4 text-muted-foreground" /> Copy
+            {/* Quick react bar */}
+            <div className="flex items-center justify-center gap-0.5 px-2 py-2 border-b dark:border-zinc-700">
+              {QUICK_REACTIONS.map(emoji => (
+                <button
+                  key={emoji}
+                  className="h-9 w-9 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center justify-center text-xl active:scale-125 transition-transform"
+                  onClick={() => handleReaction(contextMenu.msg.id, emoji)}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+            <div className="py-1">
+              <button className="flex items-center gap-3 w-full px-3.5 py-2.5 text-[13px] hover:bg-gray-100 dark:hover:bg-zinc-700 text-left active:bg-gray-200 dark:active:bg-zinc-600" onClick={() => handleReply(contextMenu.msg)}>
+                <Reply className="h-4 w-4 text-muted-foreground" /> Reply
               </button>
-            )}
-            <button className="flex items-center gap-3 w-full px-3.5 py-2 text-[13px] hover:bg-gray-100 dark:hover:bg-zinc-700 text-left active:bg-gray-200 dark:active:bg-zinc-600" onClick={() => handlePin(contextMenu.msg)}>
-              {contextMenu.msg.pinned ? <PinOff className="h-4 w-4 text-muted-foreground" /> : <Pin className="h-4 w-4 text-muted-foreground" />}
-              {contextMenu.msg.pinned ? "Unpin" : "Pin"}
-            </button>
-            {contextMenu.msg.sender_id === user?.id && (
-              <button className="flex items-center gap-3 w-full px-3.5 py-2 text-[13px] hover:bg-red-50 dark:hover:bg-red-500/10 text-red-500 text-left active:bg-red-100 dark:active:bg-red-500/20" onClick={() => handleDelete(contextMenu.msg)}>
-                <Trash2 className="h-4 w-4" /> Delete
+              <button className="flex items-center gap-3 w-full px-3.5 py-2.5 text-[13px] hover:bg-gray-100 dark:hover:bg-zinc-700 text-left active:bg-gray-200 dark:active:bg-zinc-600" onClick={() => handleForwardSelect(contextMenu.msg)}>
+                <Forward className="h-4 w-4 text-muted-foreground" /> Forward
               </button>
-            )}
+              {contextMenu.msg.type === "text" && (
+                <button className="flex items-center gap-3 w-full px-3.5 py-2.5 text-[13px] hover:bg-gray-100 dark:hover:bg-zinc-700 text-left active:bg-gray-200 dark:active:bg-zinc-600" onClick={() => handleCopy(contextMenu.msg)}>
+                  <Copy className="h-4 w-4 text-muted-foreground" /> Copy
+                </button>
+              )}
+              {contextMenu.msg.sender_id === user?.id && contextMenu.msg.type === "text" && !contextMenu.msg.deleted_at && (
+                <button className="flex items-center gap-3 w-full px-3.5 py-2.5 text-[13px] hover:bg-gray-100 dark:hover:bg-zinc-700 text-left active:bg-gray-200 dark:active:bg-zinc-600" onClick={() => handleEdit(contextMenu.msg)}>
+                  <Pencil className="h-4 w-4 text-muted-foreground" /> Edit
+                </button>
+              )}
+              <button className="flex items-center gap-3 w-full px-3.5 py-2.5 text-[13px] hover:bg-gray-100 dark:hover:bg-zinc-700 text-left active:bg-gray-200 dark:active:bg-zinc-600" onClick={() => handlePin(contextMenu.msg)}>
+                {contextMenu.msg.pinned ? <PinOff className="h-4 w-4 text-muted-foreground" /> : <Pin className="h-4 w-4 text-muted-foreground" />}
+                {contextMenu.msg.pinned ? "Unpin" : "Pin"}
+              </button>
+              {contextMenu.msg.sender_id === user?.id && (
+                <button className="flex items-center gap-3 w-full px-3.5 py-2.5 text-[13px] hover:bg-red-50 dark:hover:bg-red-500/10 text-red-500 text-left active:bg-red-100 dark:active:bg-red-500/20" onClick={() => handleDelete(contextMenu.msg)}>
+                  <Trash2 className="h-4 w-4" /> Delete
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Forward dialog */}
+      {forwardMsg && (
+        <div
+          className="fixed inset-0 z-[95] bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center"
+          onClick={() => setForwardMsg(null)}
+        >
+          <div
+            className="bg-white dark:bg-zinc-900 w-full sm:w-96 sm:rounded-2xl rounded-t-2xl max-h-[70vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-4 py-3 border-b flex items-center justify-between shrink-0">
+              <h3 className="font-semibold text-sm">Forward to...</h3>
+              <button className="h-7 w-7 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center justify-center" onClick={() => setForwardMsg(null)}>
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {conversations.filter(c => c.peerId !== selectedPeerId).map((conv) => {
+                const peer = peerProfiles[conv.peerId];
+                if (!peer) return null;
+                const initials = peer.name.split(" ").map((n) => n[0]).join("").toUpperCase();
+                return (
+                  <button
+                    key={conv.peerId}
+                    className="flex items-center gap-3 w-full p-3 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors text-left active:bg-gray-100 dark:active:bg-zinc-700"
+                    onClick={() => handleForwardTo(conv.peerId)}
+                  >
+                    <Avatar className="h-10 w-10 shrink-0">
+                      {peer.avatar_url ? (
+                        <img src={peer.avatar_url} alt={peer.name} className="h-full w-full object-cover rounded-full" />
+                      ) : (
+                        <AvatarFallback className="bg-amber-100 text-amber-700 text-sm font-semibold">{initials}</AvatarFallback>
+                      )}
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{peer.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{peer.faculty}</p>
+                    </div>
+                  </button>
+                );
+              })}
+              {conversations.filter(c => c.peerId !== selectedPeerId).length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-8">No other conversations</p>
+              )}
+            </div>
           </div>
         </div>
       )}
