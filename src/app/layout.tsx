@@ -6,6 +6,7 @@ import { SidebarProvider } from "@/lib/sidebar-context";
 import { ThemeProvider } from "@/components/theme-provider";
 import Navbar from "@/components/navbar";
 import AppShell from "@/components/app-shell";
+import PushPrompt from "@/components/push-prompt";
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorBoundary } from "@/components/error-boundary";
 
@@ -53,6 +54,7 @@ export default function RootLayout({
                   {children}
                 </ErrorBoundary>
               </AppShell>
+              <PushPrompt />
               <Toaster richColors position="top-right" />
             </SidebarProvider>
           </AuthProvider>

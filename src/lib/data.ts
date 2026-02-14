@@ -179,6 +179,21 @@ export async function sendMessage(msg: { sender_id: string; receiver_id: string;
     .insert({ ...msg, type: msg.type || "text" })
     .select()
     .single();
+
+  // Fire-and-forget push notification
+  if (data && !error) {
+    fetch("/api/push/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        recipientId: msg.receiver_id,
+        title: "New Message",
+        body: msg.content.length > 80 ? msg.content.slice(0, 80) + "..." : msg.content,
+        url: "/messages",
+      }),
+    }).catch(() => {});
+  }
+
   return { data: data as Message | null, error };
 }
 

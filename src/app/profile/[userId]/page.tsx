@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { getProfileById, getSessionsByUser, getTimeSinceLastSeen, computeBadges } from "@/lib/data";
+import { getProfileById, getSessionsByUser, getTimeSinceLastSeen, computeBadges, createSession, createNotification } from "@/lib/data";
 import { Profile, Badge as BadgeType } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   Star,
   GraduationCap,
@@ -21,7 +25,9 @@ import {
   Monitor,
   Clock,
   ArrowLeft,
+  MapPin,
 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function PublicProfilePage() {
   const { user: currentUser, isLoading } = useAuth();
@@ -33,6 +39,13 @@ export default function PublicProfilePage() {
   const [badges, setBadges] = useState<BadgeType[]>([]);
   const [sessionCount, setSessionCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showBookDialog, setShowBookDialog] = useState(false);
+  const [bookSkill, setBookSkill] = useState("");
+  const [bookDate, setBookDate] = useState("");
+  const [bookTime, setBookTime] = useState("");
+  const [bookMode, setBookMode] = useState<"online" | "offline">("online");
+  const [bookLocation, setBookLocation] = useState("");
+  const [bookingInProgress, setBookingInProgress] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !currentUser) {
@@ -153,6 +166,12 @@ export default function PublicProfilePage() {
                   <MessageSquare className="h-4 w-4" /> Message
                 </Button>
               </Link>
+              <Button
+                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white gap-2"
+                onClick={() => setShowBookDialog(true)}
+              >
+                <Calendar className="h-4 w-4" /> Book Session
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -244,6 +263,131 @@ export default function PublicProfilePage() {
           </Card>
         </div>
       </div>
+
+      {/* Book Session Dialog */}
+      <Dialog open={showBookDialog} onOpenChange={setShowBookDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Book a Session with {profileUser?.name?.split(" ")[0]}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Skill</Label>
+              <Select value={bookSkill} onValueChange={setBookSkill}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a skill" />
+                </SelectTrigger>
+                <SelectContent>
+                  {profileUser?.skills_to_teach.map((s) => (
+                    <SelectItem key={s.name} value={s.name}>
+                      {s.name} ({s.level})
+                    </SelectItem>
+                  ))}
+                  {profileUser?.skills_to_learn
+                    .filter((s) => currentUser?.skills_to_teach.some((t) => t.name.toLowerCase() === s.name.toLowerCase()))
+                    .map((s) => (
+                      <SelectItem key={`learn-${s.name}`} value={s.name}>
+                        {s.name} (you teach)
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Date</Label>
+                <Input
+                  type="date"
+                  value={bookDate}
+                  onChange={(e) => setBookDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Time</Label>
+                <Input
+                  type="time"
+                  value={bookTime}
+                  onChange={(e) => setBookTime(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Mode</Label>
+              <Select value={bookMode} onValueChange={(v) => setBookMode(v as "online" | "offline")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="online">
+                    <span className="flex items-center gap-2"><Monitor className="h-3 w-3" /> Online</span>
+                  </SelectItem>
+                  <SelectItem value="offline">
+                    <span className="flex items-center gap-2"><MapPin className="h-3 w-3" /> In Person</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {bookMode === "offline" && (
+              <div className="space-y-2">
+                <Label>Location</Label>
+                <Input
+                  placeholder="e.g. KNUST Library, Room 2B"
+                  value={bookLocation}
+                  onChange={(e) => setBookLocation(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowBookDialog(false)}>Cancel</Button>
+            <Button
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+              disabled={!bookSkill || !bookDate || !bookTime || bookingInProgress}
+              onClick={async () => {
+                if (!currentUser || !profileUser) return;
+                setBookingInProgress(true);
+                const isTeaching = currentUser.skills_to_teach.some(
+                  (t) => t.name.toLowerCase() === bookSkill.toLowerCase()
+                );
+                const teacherId = isTeaching ? currentUser.id : profileUser.id;
+                const learnerId = isTeaching ? profileUser.id : currentUser.id;
+                const { error } = await createSession({
+                  teacher_id: teacherId,
+                  learner_id: learnerId,
+                  skill: bookSkill,
+                  date: bookDate,
+                  time: bookTime,
+                  mode: bookMode,
+                  location: bookLocation,
+                  status: "pending",
+                  notes: "",
+                });
+                if (error) {
+                  toast.error("Failed to book session");
+                } else {
+                  await createNotification({
+                    user_id: profileUser.id,
+                    type: "session_request",
+                    title: "New Session Request",
+                    message: `${currentUser.name} wants to book a ${bookSkill} session with you`,
+                    link: "/sessions",
+                  });
+                  toast.success("Session request sent!");
+                  setShowBookDialog(false);
+                  setBookSkill("");
+                  setBookDate("");
+                  setBookTime("");
+                  setBookLocation("");
+                }
+                setBookingInProgress(false);
+              }}
+            >
+              {bookingInProgress ? "Sending..." : "Send Request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

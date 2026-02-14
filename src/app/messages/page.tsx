@@ -59,6 +59,9 @@ function MessagesContent() {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [peerTyping, setPeerTyping] = useState(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) router.push("/login");
@@ -87,6 +90,39 @@ function MessagesContent() {
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
+
+  // Typing indicator channel
+  useEffect(() => {
+    if (!user || !selectedPeerId) return;
+    const pairId = [user.id, selectedPeerId].sort().join("_");
+    const typingChannel = supabase.channel(`typing-${pairId}`);
+    typingChannelRef.current = typingChannel;
+
+    typingChannel
+      .on("broadcast", { event: "typing" }, (payload) => {
+        if (payload.payload?.userId === selectedPeerId) {
+          setPeerTyping(true);
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => setPeerTyping(false), 2500);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      setPeerTyping(false);
+      supabase.removeChannel(typingChannel);
+      typingChannelRef.current = null;
+    };
+  }, [selectedPeerId, user]);
+
+  const broadcastTyping = useCallback(() => {
+    if (!user || !typingChannelRef.current) return;
+    typingChannelRef.current.send({
+      type: "broadcast",
+      event: "typing",
+      payload: { userId: user.id },
+    });
+  }, [user]);
 
   // Fetch messages for selected peer
   useEffect(() => {
@@ -314,7 +350,11 @@ function MessagesContent() {
                       </Avatar>
                       <div className="min-w-0">
                         <p className="text-sm font-semibold truncate">{selectedPeer.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{selectedPeer.faculty}</p>
+                        {peerTyping ? (
+                          <p className="text-xs text-green-600 dark:text-green-400 animate-pulse">typing...</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground truncate">{selectedPeer.faculty}</p>
+                        )}
                       </div>
                     </Link>
                   )}
@@ -362,7 +402,7 @@ function MessagesContent() {
                       ref={inputRef}
                       placeholder="Type a message..."
                       value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
+                      onChange={(e) => { setNewMessage(e.target.value); broadcastTyping(); }}
                       className="flex-1"
                       autoComplete="off"
                     />
