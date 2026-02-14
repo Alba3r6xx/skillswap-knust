@@ -188,7 +188,7 @@ export async function sendMessage(msg: { sender_id: string; receiver_id: string;
       body: JSON.stringify({
         recipientId: msg.receiver_id,
         title: "New Message",
-        body: msg.type === "audio" ? "🎤 Voice note" : msg.type === "image" ? "📷 Photo" : msg.content.length > 80 ? msg.content.slice(0, 80) + "..." : msg.content,
+        body: msg.type === "audio" ? "🎤 Voice note" : msg.type === "image" ? "📷 Photo" : msg.type === "document" ? "📄 Document" : msg.content.length > 80 ? msg.content.slice(0, 80) + "..." : msg.content,
         url: "/messages",
       }),
     }).catch(() => {});

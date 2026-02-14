@@ -24,6 +24,9 @@ import {
   Play,
   Pause,
   ImagePlus,
+  Paperclip,
+  FileText,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -251,6 +254,9 @@ function MessagesContent() {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) router.push("/login");
@@ -573,6 +579,77 @@ function MessagesContent() {
     setSending(false);
   };
 
+  const handleDocPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File must be under 10MB");
+      return;
+    }
+    setDocFile(file);
+    if (e.target) e.target.value = "";
+  };
+
+  const discardDoc = () => {
+    setDocFile(null);
+  };
+
+  const sendDoc = async () => {
+    if (!docFile || !user || !selectedPeerId || sending) return;
+    setSending(true);
+    const ext = docFile.name.split(".").pop() || "bin";
+    const fileName = `${user.id}/${Date.now()}.${ext}`;
+
+    const { error: uploadErr } = await supabase.storage
+      .from("audio-messages")
+      .upload(fileName, docFile, { contentType: docFile.type });
+
+    if (uploadErr) {
+      toast.error("Failed to upload file: " + uploadErr.message);
+      setSending(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("audio-messages")
+      .getPublicUrl(fileName);
+
+    // Store as url|||originalName|||sizeBytes so we can display nicely
+    const content = `${urlData.publicUrl}|||${docFile.name}|||${docFile.size}`;
+
+    const { data: msgData, error: msgErr } = await sendMessage({
+      sender_id: user.id,
+      receiver_id: selectedPeerId,
+      content,
+      type: "document",
+    });
+
+    if (msgErr) {
+      toast.error("Failed to send document");
+    } else if (msgData) {
+      setMessages((prev) => [...prev, msgData]);
+      fetchConversations();
+    }
+    discardDoc();
+    setSending(false);
+  };
+
+  // Helper to parse document content
+  const parseDocContent = (content: string) => {
+    const parts = content.split("|||");
+    return {
+      url: parts[0],
+      name: parts[1] || "Document",
+      size: parts[2] ? Number(parts[2]) : 0,
+    };
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
   if (isLoading || !user) {
     return (
       <div className="bg-gray-50 dark:bg-background p-6">
@@ -679,6 +756,8 @@ function MessagesContent() {
                                 <span className="flex items-center gap-1"><Mic className="h-3 w-3" /> Voice note</span>
                               ) : conv.lastMessage.type === "image" ? (
                                 <span className="flex items-center gap-1"><ImagePlus className="h-3 w-3" /> Photo</span>
+                              ) : conv.lastMessage.type === "document" ? (
+                                <span className="flex items-center gap-1"><FileText className="h-3 w-3" /> Document</span>
                               ) : conv.lastMessage.content}
                             </p>
                             {conv.unreadCount > 0 && (
@@ -757,6 +836,7 @@ function MessagesContent() {
                     const sameSender = prevMsg?.sender_id === msg.sender_id;
                     const isAudio = msg.type === "audio";
                     const isImage = msg.type === "image";
+                    const isDoc = msg.type === "document";
                     const showTail = !sameSender;
 
                     return (
@@ -768,6 +848,7 @@ function MessagesContent() {
                           className={`relative max-w-[85%] sm:max-w-[65%] text-[14.5px] ${
                             isImage ? "p-1 w-[260px] max-w-full"
                               : isAudio ? "px-2.5 py-2 w-[280px] max-w-full"
+                              : isDoc ? "px-3 py-2 w-[260px] max-w-full"
                               : "px-3 py-1.5"
                           } ${
                             isMine
@@ -780,21 +861,45 @@ function MessagesContent() {
                           }`}
                         >
                           {isImage ? (
-                            <a href={msg.content} target="_blank" rel="noopener noreferrer">
+                            <button type="button" onClick={() => setLightboxSrc(msg.content)} className="block w-full">
                               <img
                                 src={msg.content}
                                 alt="Shared image"
                                 className="rounded-lg w-full max-h-[300px] object-cover cursor-pointer"
                                 loading="lazy"
                               />
-                            </a>
+                            </button>
                           ) : isAudio ? (
                             <VoiceMessage src={msg.content} isMine={isMine} />
-                          ) : (
+                          ) : isDoc ? (() => {
+                            const doc = parseDocContent(msg.content);
+                            const ext = doc.name.split(".").pop()?.toUpperCase() || "FILE";
+                            return (
+                              <a
+                                href={doc.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-3 group"
+                              >
+                                <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
+                                  isMine ? "bg-white/20" : "bg-amber-100 dark:bg-amber-500/20"
+                                }`}>
+                                  <FileText className={`h-5 w-5 ${isMine ? "text-white" : "text-amber-600 dark:text-amber-400"}`} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-sm font-medium truncate ${isMine ? "text-white" : ""}`}>{doc.name}</p>
+                                  <p className={`text-[11px] ${isMine ? "text-white/60" : "text-muted-foreground"}`}>
+                                    {ext} · {formatFileSize(doc.size)}
+                                  </p>
+                                </div>
+                                <Download className={`h-4 w-4 shrink-0 opacity-60 group-hover:opacity-100 ${isMine ? "text-white" : "text-muted-foreground"}`} />
+                              </a>
+                            );
+                          })() : (
                             <p className="break-words whitespace-pre-wrap">{msg.content}</p>
                           )}
                           <div className={`flex items-center justify-end gap-0.5 -mb-0.5 ${
-                            isImage ? "mt-0.5 px-1" : isAudio ? "mt-0" : "mt-0.5"
+                            isImage ? "mt-0.5 px-1" : isAudio || isDoc ? "mt-0" : "mt-0.5"
                           } ${
                             isMine ? "text-white/60" : "text-gray-400 dark:text-zinc-500"
                           }`}>
@@ -810,66 +915,79 @@ function MessagesContent() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Image preview */}
-                {imagePreview && (
+                {/* Attachment preview (image or document) */}
+                {(imagePreview || docFile) && (
                   <div className="px-3 pt-2 pb-0 border-t shrink-0 bg-background">
-                    <div className="relative inline-block">
-                      <img src={imagePreview} alt="Preview" className="h-32 rounded-xl object-cover" />
-                      <button
-                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md"
-                        onClick={discardImage}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
+                    {imagePreview ? (
+                      <div className="relative inline-block">
+                        <img src={imagePreview} alt="Preview" className="h-32 rounded-xl object-cover" />
+                        <button
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md"
+                          onClick={discardImage}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : docFile ? (
+                      <div className="flex items-center gap-3 bg-gray-100 dark:bg-zinc-800 rounded-xl px-3 py-2.5 max-w-xs">
+                        <div className="h-10 w-10 rounded-lg bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center shrink-0">
+                          <FileText className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{docFile.name}</p>
+                          <p className="text-[11px] text-muted-foreground">{formatFileSize(docFile.size)}</p>
+                        </div>
+                        <button
+                          className="h-6 w-6 rounded-full bg-red-500 text-white flex items-center justify-center shrink-0"
+                          onClick={discardDoc}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 )}
 
                 {/* Input */}
-                <div className={`px-3 py-2 ${!imagePreview ? "border-t" : ""} shrink-0 bg-background`} style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
-                  {/* Hidden file input for images */}
-                  <input
-                    ref={imageInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImagePick}
-                  />
+                <div className={`px-3 py-2 ${!imagePreview && !docFile ? "border-t" : ""} shrink-0 bg-background`} style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+                  {/* Hidden file inputs */}
+                  <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImagePick} />
+                  <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.csv" className="hidden" onChange={handleDocPick} />
 
                   {imagePreview ? (
-                    /* Image selected — send or discard */
+                    /* Image selected — send */
                     <div className="flex items-center gap-2">
                       <div className="flex-1 relative">
                         <div className="min-h-[2.75rem] rounded-[22px] bg-gray-100 dark:bg-zinc-800 px-4 py-2.5 text-base text-gray-400 dark:text-zinc-500">
                           Send photo...
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        disabled={sending}
-                        className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50"
-                        onClick={sendImage}
-                      >
+                      <button type="button" disabled={sending} className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50" onClick={sendImage}>
+                        {sending ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  ) : docFile ? (
+                    /* Document selected — send */
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 relative">
+                        <div className="min-h-[2.75rem] rounded-[22px] bg-gray-100 dark:bg-zinc-800 px-4 py-2.5 text-base text-gray-400 dark:text-zinc-500">
+                          Send document...
+                        </div>
+                      </div>
+                      <button type="button" disabled={sending} className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50" onClick={sendDoc}>
                         {sending ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="h-4 w-4" />}
                       </button>
                     </div>
                   ) : audioPreview ? (
                     /* Voice note preview */
                     <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 rounded-full px-2 py-1.5">
-                      <button
-                        className="h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-red-500 hover:bg-red-100 dark:hover:bg-red-500/10 transition-colors"
-                        onClick={discardVoiceNote}
-                      >
+                      <button className="h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-red-500 hover:bg-red-100 dark:hover:bg-red-500/10" onClick={discardVoiceNote}>
                         <X className="h-4 w-4" />
                       </button>
                       <div className="flex-1 min-w-0">
                         <audio controls src={audioPreview} className="w-full h-8" style={{ filter: "sepia(20%) saturate(70%) grayscale(1) contrast(99%) invert(12%)" }} />
                       </div>
-                      <button
-                        disabled={sending}
-                        className="h-9 w-9 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50"
-                        onClick={sendVoiceNote}
-                      >
+                      <button disabled={sending} className="h-9 w-9 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50" onClick={sendVoiceNote}>
                         {sending ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="h-4 w-4" />}
                       </button>
                     </div>
@@ -882,29 +1000,21 @@ function MessagesContent() {
                       </span>
                       <div className="flex-1 flex items-center justify-center gap-[2px] h-7">
                         {waveformBars.map((h, i) => (
-                          <span
-                            key={i}
-                            className="w-[2.5px] bg-red-400 dark:bg-red-500 rounded-full transition-all duration-75"
-                            style={{ height: `${h}px` }}
-                          />
+                          <span key={i} className="w-[2.5px] bg-red-400 dark:bg-red-500 rounded-full transition-all duration-75" style={{ height: `${h}px` }} />
                         ))}
                       </div>
-                      <button
-                        className="h-9 w-9 rounded-full bg-red-500 hover:bg-red-600 text-white shrink-0 flex items-center justify-center active:scale-95"
-                        onClick={stopRecording}
-                      >
+                      <button className="h-9 w-9 rounded-full bg-red-500 hover:bg-red-600 text-white shrink-0 flex items-center justify-center active:scale-95" onClick={stopRecording}>
                         <Square className="h-3.5 w-3.5" fill="white" />
                       </button>
                     </div>
                   ) : (
                     /* Normal text input */
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        className="h-10 w-10 rounded-full text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 shrink-0 flex items-center justify-center active:scale-95"
-                        onClick={() => imageInputRef.current?.click()}
-                      >
+                    <div className="flex items-center gap-1.5">
+                      <button type="button" className="h-9 w-9 rounded-full text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 shrink-0 flex items-center justify-center active:scale-95" onClick={() => imageInputRef.current?.click()}>
                         <ImagePlus className="h-5 w-5" />
+                      </button>
+                      <button type="button" className="h-9 w-9 rounded-full text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 shrink-0 flex items-center justify-center active:scale-95" onClick={() => docInputRef.current?.click()}>
+                        <Paperclip className="h-5 w-5" />
                       </button>
                       <div className="flex-1 relative">
                         {!newMessage && (
@@ -938,20 +1048,11 @@ function MessagesContent() {
                         />
                       </div>
                       {newMessage.trim() ? (
-                        <button
-                          type="button"
-                          disabled={sending}
-                          className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50"
-                          onClick={handleSend}
-                        >
+                        <button type="button" disabled={sending} className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50" onClick={handleSend}>
                           <Send className="h-4 w-4" />
                         </button>
                       ) : (
-                        <button
-                          type="button"
-                          className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95"
-                          onClick={startRecording}
-                        >
+                        <button type="button" className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95" onClick={startRecording}>
                           <Mic className="h-4 w-4" />
                         </button>
                       )}
@@ -963,6 +1064,37 @@ function MessagesContent() {
           </div>
         </div>
       </div>
+
+      {/* Lightbox — in-app image viewer */}
+      {lightboxSrc && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightboxSrc(null)}
+        >
+          <button
+            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center z-10"
+            onClick={() => setLightboxSrc(null)}
+            style={{ top: 'max(1rem, env(safe-area-inset-top))' }}
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <img
+            src={lightboxSrc}
+            alt="Full size"
+            className="max-w-full max-h-full object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <a
+            href={lightboxSrc}
+            download
+            className="absolute bottom-6 right-6 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+            style={{ bottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+          >
+            <Download className="h-5 w-5" />
+          </a>
+        </div>
+      )}
     </div>
   );
 }
