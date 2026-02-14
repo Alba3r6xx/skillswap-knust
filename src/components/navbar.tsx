@@ -261,7 +261,7 @@ export default function Navbar() {
       </aside>
 
       {/* Mobile Header */}
-      <header className="md:hidden fixed top-0 left-0 right-0 h-14 border-b bg-background z-40 flex items-center justify-between px-4">
+      <header className="md:hidden fixed top-0 left-0 right-0 border-b bg-background z-40 flex items-center justify-between px-4 h-14 pt-[env(safe-area-inset-top)]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -319,7 +319,7 @@ export default function Navbar() {
         </div>
       </header>
       {/* Mobile spacer */}
-      <div className="md:hidden h-14" />
+      <div className="md:hidden h-14" style={{ paddingTop: 'env(safe-area-inset-top)' }} />
     </TooltipProvider>
   );
 }

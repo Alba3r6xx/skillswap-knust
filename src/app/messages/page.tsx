@@ -134,7 +134,7 @@ function VoiceMessage({ src, isMine }: { src: string; isMine: boolean }) {
             return (
               <span
                 key={i}
-                className={`w-[2px] rounded-full transition-all duration-100 ${
+                className={`w-[2px] rounded-full ${
                   filled
                     ? isMine ? "bg-white" : "bg-amber-500"
                     : isMine ? "bg-white/25" : "bg-gray-300 dark:bg-zinc-600"
@@ -145,7 +145,7 @@ function VoiceMessage({ src, isMine }: { src: string; isMine: boolean }) {
           })}
           {/* Seek dot */}
           <span
-            className={`absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full shadow-md transition-all duration-100 ${
+            className={`absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full shadow-md ${
               isMine ? "bg-white" : "bg-amber-500"
             }`}
             style={{ left: `${Math.min(progress, 98)}%` }}
@@ -686,7 +686,7 @@ function MessagesContent() {
                 </div>
 
                 {/* Input */}
-                <div className="px-3 py-2 border-t shrink-0 bg-background">
+                <div className="px-3 py-2 border-t shrink-0 bg-background" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
                   {audioPreview ? (
                     /* Voice note preview */
                     <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 rounded-full px-2 py-1.5">
@@ -731,49 +731,44 @@ function MessagesContent() {
                       </button>
                     </div>
                   ) : (
-                    /* Normal text input */
-                    <form
-                      onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-                      className="flex items-center gap-2"
-                      autoComplete="off"
-                    >
-                      <div className="flex-1 relative">
-                        <input
-                          ref={inputRef}
-                          type="text"
-                          inputMode="text"
-                          placeholder="Message"
-                          value={newMessage}
-                          onChange={(e) => { setNewMessage(e.target.value); broadcastTyping(); }}
-                          className="w-full h-11 rounded-full bg-gray-100 dark:bg-zinc-800 px-4 text-sm outline-none placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:ring-2 focus:ring-amber-500/30"
-                          name="chatmsg"
-                          autoComplete="off"
-                          autoCorrect="on"
-                          autoCapitalize="sentences"
-                          enterKeyHint="send"
-                          data-form-type="other"
-                          data-lpignore="true"
-                          data-1p-ignore="true"
-                        />
-                      </div>
+                    /* Normal text input — no <form> to prevent iOS form navigation bar */
+                    <div className="flex items-center gap-2">
+                      <input
+                        ref={inputRef}
+                        type="text"
+                        inputMode="text"
+                        placeholder="Message"
+                        value={newMessage}
+                        onChange={(e) => { setNewMessage(e.target.value); broadcastTyping(); }}
+                        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                        className="flex-1 h-11 rounded-full bg-gray-100 dark:bg-zinc-800 px-4 text-sm outline-none placeholder:text-gray-400 dark:placeholder:text-zinc-500 focus:ring-2 focus:ring-amber-500/30"
+                        autoComplete="off"
+                        autoCorrect="on"
+                        autoCapitalize="sentences"
+                        enterKeyHint="send"
+                        data-form-type="other"
+                        data-lpignore="true"
+                        data-1p-ignore="true"
+                      />
                       {newMessage.trim() ? (
                         <button
-                          type="submit"
+                          type="button"
                           disabled={sending}
-                          className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50"
+                          className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50"
+                          onClick={handleSend}
                         >
                           <Send className="h-4 w-4" />
                         </button>
                       ) : (
                         <button
                           type="button"
-                          className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center transition-all active:scale-95"
+                          className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95"
                           onClick={startRecording}
                         >
                           <Mic className="h-4 w-4" />
                         </button>
                       )}
-                    </form>
+                    </div>
                   )}
                 </div>
               </>
