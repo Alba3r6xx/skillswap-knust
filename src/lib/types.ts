@@ -46,7 +46,7 @@ export interface Message {
   sender_id: string;
   receiver_id: string;
   content: string;
-  type: "text" | "resource" | "audio";
+  type: "text" | "resource" | "audio" | "image";
   read: boolean;
   delivered: boolean;
   created_at: string;

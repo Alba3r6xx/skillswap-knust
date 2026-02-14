@@ -23,6 +23,7 @@ import {
   X,
   Play,
   Pause,
+  ImagePlus,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -247,6 +248,9 @@ function MessagesContent() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number>(0);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) router.push("/login");
@@ -510,6 +514,65 @@ function MessagesContent() {
     setSending(false);
   };
 
+  const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    if (e.target) e.target.value = "";
+  };
+
+  const discardImage = () => {
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+    setImageFile(null);
+  };
+
+  const sendImage = async () => {
+    if (!imageFile || !user || !selectedPeerId || sending) return;
+    setSending(true);
+    const ext = imageFile.name.split(".").pop() || "jpg";
+    const fileName = `${user.id}/${Date.now()}.${ext}`;
+
+    const { error: uploadErr } = await supabase.storage
+      .from("audio-messages")
+      .upload(fileName, imageFile, { contentType: imageFile.type });
+
+    if (uploadErr) {
+      toast.error("Failed to upload image: " + uploadErr.message);
+      setSending(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("audio-messages")
+      .getPublicUrl(fileName);
+
+    const { data: msgData, error: msgErr } = await sendMessage({
+      sender_id: user.id,
+      receiver_id: selectedPeerId,
+      content: urlData.publicUrl,
+      type: "image",
+    });
+
+    if (msgErr) {
+      toast.error("Failed to send image");
+    } else if (msgData) {
+      setMessages((prev) => [...prev, msgData]);
+      fetchConversations();
+    }
+    discardImage();
+    setSending(false);
+  };
+
   if (isLoading || !user) {
     return (
       <div className="bg-gray-50 dark:bg-background p-6">
@@ -614,6 +677,8 @@ function MessagesContent() {
                               )}
                               {conv.lastMessage.type === "audio" ? (
                                 <span className="flex items-center gap-1"><Mic className="h-3 w-3" /> Voice note</span>
+                              ) : conv.lastMessage.type === "image" ? (
+                                <span className="flex items-center gap-1"><ImagePlus className="h-3 w-3" /> Photo</span>
                               ) : conv.lastMessage.content}
                             </p>
                             {conv.unreadCount > 0 && (
@@ -691,6 +756,7 @@ function MessagesContent() {
                     const prevMsg = idx > 0 ? messages[idx - 1] : null;
                     const sameSender = prevMsg?.sender_id === msg.sender_id;
                     const isAudio = msg.type === "audio";
+                    const isImage = msg.type === "image";
                     const showTail = !sameSender;
 
                     return (
@@ -700,7 +766,9 @@ function MessagesContent() {
                       >
                         <div
                           className={`relative max-w-[85%] sm:max-w-[65%] text-[14.5px] ${
-                            isAudio ? "px-2.5 py-2 w-[280px] max-w-full" : "px-3 py-1.5"
+                            isImage ? "p-1 w-[260px] max-w-full"
+                              : isAudio ? "px-2.5 py-2 w-[280px] max-w-full"
+                              : "px-3 py-1.5"
                           } ${
                             isMine
                               ? `bg-amber-500 dark:bg-amber-600 text-white shadow-sm ${
@@ -711,13 +779,22 @@ function MessagesContent() {
                                 }`
                           }`}
                         >
-                          {isAudio ? (
+                          {isImage ? (
+                            <a href={msg.content} target="_blank" rel="noopener noreferrer">
+                              <img
+                                src={msg.content}
+                                alt="Shared image"
+                                className="rounded-lg w-full max-h-[300px] object-cover cursor-pointer"
+                                loading="lazy"
+                              />
+                            </a>
+                          ) : isAudio ? (
                             <VoiceMessage src={msg.content} isMine={isMine} />
                           ) : (
                             <p className="break-words whitespace-pre-wrap">{msg.content}</p>
                           )}
                           <div className={`flex items-center justify-end gap-0.5 -mb-0.5 ${
-                            isAudio ? "mt-0" : "mt-0.5"
+                            isImage ? "mt-0.5 px-1" : isAudio ? "mt-0" : "mt-0.5"
                           } ${
                             isMine ? "text-white/60" : "text-gray-400 dark:text-zinc-500"
                           }`}>
@@ -733,9 +810,50 @@ function MessagesContent() {
                   <div ref={messagesEndRef} />
                 </div>
 
+                {/* Image preview */}
+                {imagePreview && (
+                  <div className="px-3 pt-2 pb-0 border-t shrink-0 bg-background">
+                    <div className="relative inline-block">
+                      <img src={imagePreview} alt="Preview" className="h-32 rounded-xl object-cover" />
+                      <button
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md"
+                        onClick={discardImage}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Input */}
-                <div className="px-3 py-2 border-t shrink-0 bg-background" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
-                  {audioPreview ? (
+                <div className={`px-3 py-2 ${!imagePreview ? "border-t" : ""} shrink-0 bg-background`} style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+                  {/* Hidden file input for images */}
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImagePick}
+                  />
+
+                  {imagePreview ? (
+                    /* Image selected — send or discard */
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 relative">
+                        <div className="min-h-[2.75rem] rounded-[22px] bg-gray-100 dark:bg-zinc-800 px-4 py-2.5 text-base text-gray-400 dark:text-zinc-500">
+                          Send photo...
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={sending}
+                        className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50"
+                        onClick={sendImage}
+                      >
+                        {sending ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  ) : audioPreview ? (
                     /* Voice note preview */
                     <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 rounded-full px-2 py-1.5">
                       <button
@@ -749,7 +867,7 @@ function MessagesContent() {
                       </div>
                       <button
                         disabled={sending}
-                        className="h-9 w-9 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center transition-all active:scale-95 disabled:opacity-50"
+                        className="h-9 w-9 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50"
                         onClick={sendVoiceNote}
                       >
                         {sending ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="h-4 w-4" />}
@@ -772,15 +890,22 @@ function MessagesContent() {
                         ))}
                       </div>
                       <button
-                        className="h-9 w-9 rounded-full bg-red-500 hover:bg-red-600 text-white shrink-0 flex items-center justify-center transition-all active:scale-95"
+                        className="h-9 w-9 rounded-full bg-red-500 hover:bg-red-600 text-white shrink-0 flex items-center justify-center active:scale-95"
                         onClick={stopRecording}
                       >
                         <Square className="h-3.5 w-3.5" fill="white" />
                       </button>
                     </div>
                   ) : (
-                    /* contentEditable div — iOS won't show form assistant bar (< > arrows) for non-form elements */
+                    /* Normal text input */
                     <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        className="h-10 w-10 rounded-full text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 shrink-0 flex items-center justify-center active:scale-95"
+                        onClick={() => imageInputRef.current?.click()}
+                      >
+                        <ImagePlus className="h-5 w-5" />
+                      </button>
                       <div className="flex-1 relative">
                         {!newMessage && (
                           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 pointer-events-none text-base select-none">

@@ -1,9 +1,9 @@
 -- 1. Add 'delivered' column to messages
 ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS delivered boolean DEFAULT false;
 
--- 2. Update the type CHECK constraint to allow 'audio'
+-- 2. Update the type CHECK constraint to allow 'audio' and 'image'
 ALTER TABLE public.messages DROP CONSTRAINT IF EXISTS messages_type_check;
-ALTER TABLE public.messages ADD CONSTRAINT messages_type_check CHECK (type IN ('text', 'resource', 'audio'));
+ALTER TABLE public.messages ADD CONSTRAINT messages_type_check CHECK (type IN ('text', 'resource', 'audio', 'image'));
 
 -- 3. Create storage bucket for voice notes
 INSERT INTO storage.buckets (id, name, public) VALUES ('audio-messages', 'audio-messages', true)
