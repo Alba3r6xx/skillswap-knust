@@ -1,0 +1,249 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
+import { getProfileById, getSessionsByUser, getTimeSinceLastSeen, computeBadges } from "@/lib/data";
+import { Profile, Badge as BadgeType } from "@/lib/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Star,
+  GraduationCap,
+  BookOpen,
+  Calendar,
+  MessageSquare,
+  Monitor,
+  Clock,
+  ArrowLeft,
+} from "lucide-react";
+
+export default function PublicProfilePage() {
+  const { user: currentUser, isLoading } = useAuth();
+  const router = useRouter();
+  const params = useParams();
+  const userId = params.userId as string;
+
+  const [profileUser, setProfileUser] = useState<Profile | null>(null);
+  const [badges, setBadges] = useState<BadgeType[]>([]);
+  const [sessionCount, setSessionCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isLoading && !currentUser) {
+      router.push("/login");
+      return;
+    }
+    if (userId && currentUser) {
+      if (userId === currentUser.id) {
+        router.push("/profile");
+        return;
+      }
+      const fetchProfile = async () => {
+        const u = await getProfileById(userId);
+        setProfileUser(u);
+        if (u) {
+          const sessions = await getSessionsByUser(userId);
+          setBadges(computeBadges(sessions, userId));
+          setSessionCount(sessions.filter((s) => s.status === "completed").length);
+        }
+        setLoading(false);
+      };
+      fetchProfile();
+    }
+  }, [userId, currentUser, isLoading, router]);
+
+  if (isLoading || loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-background p-6">
+        <div className="container mx-auto max-w-2xl space-y-4">
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-48" />
+          <div className="grid grid-cols-2 gap-4">
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentUser) return null;
+
+  if (!profileUser) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg font-semibold mb-2">User not found</p>
+          <Button variant="outline" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4 mr-2" /> Go back
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const initials = profileUser.name.split(" ").map((n) => n[0]).join("").toUpperCase();
+  const lastSeen = getTimeSinceLastSeen(profileUser.last_seen);
+  const isOnline = lastSeen === "Online now";
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-background">
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <Button variant="ghost" size="sm" className="mb-4" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4 mr-1" /> Back
+        </Button>
+
+        {/* Profile Header */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="relative">
+                <Avatar className="h-20 w-20">
+                  {profileUser.avatar_url ? (
+                    <img src={profileUser.avatar_url} alt={profileUser.name} className="h-full w-full object-cover rounded-full" />
+                  ) : (
+                    <AvatarFallback className="bg-amber-100 text-amber-700 text-2xl font-semibold">
+                      {initials}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                {isOnline && (
+                  <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-green-500 border-2 border-background" />
+                )}
+              </div>
+              <div className="flex-1">
+                <h1 className="text-xl font-bold">{profileUser.name}</h1>
+                <p className="text-sm text-muted-foreground">{profileUser.faculty}</p>
+                <div className="flex items-center gap-3 mt-2">
+                  {profileUser.rating > 0 && (
+                    <div className="flex items-center gap-1">
+                      <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+                      <span className="text-sm font-semibold">{profileUser.rating.toFixed(1)}</span>
+                      <span className="text-xs text-muted-foreground">({profileUser.total_ratings})</span>
+                    </div>
+                  )}
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${isOnline ? "bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400" : "bg-muted text-muted-foreground"}`}>
+                    {lastSeen}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                  <Monitor className="h-3 w-3" /> {profileUser.preferred_mode}
+                  <span className="mx-1">•</span>
+                  <Calendar className="h-3 w-3" /> {sessionCount} sessions completed
+                </div>
+              </div>
+            </div>
+
+            {profileUser.bio && (
+              <>
+                <Separator className="my-4" />
+                <p className="text-sm text-muted-foreground">{profileUser.bio}</p>
+              </>
+            )}
+
+            <div className="flex gap-2 mt-4">
+              <Link href={`/messages?peer=${profileUser.id}`} className="flex-1">
+                <Button variant="outline" className="w-full gap-2">
+                  <MessageSquare className="h-4 w-4" /> Message
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Skills to Teach */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <GraduationCap className="h-4 w-4 text-green-600" /> Can Teach
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {profileUser.skills_to_teach.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No skills listed</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {profileUser.skills_to_teach.map((s) => (
+                    <Badge key={s.name} className="bg-green-50 text-green-700 dark:bg-green-500/20 dark:text-green-400">
+                      {s.name} <span className="ml-1 opacity-60">({s.level})</span>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Skills to Learn */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <BookOpen className="h-4 w-4 text-blue-600" /> Wants to Learn
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {profileUser.skills_to_learn.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No skills listed</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {profileUser.skills_to_learn.map((s) => (
+                    <Badge key={s.name} className="bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400">
+                      {s.name} <span className="ml-1 opacity-60">({s.level})</span>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Availability */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Clock className="h-4 w-4 text-amber-600" /> Availability
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {profileUser.availability.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Not specified</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {profileUser.availability.map((day) => (
+                    <Badge key={day} variant="secondary">{day}</Badge>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Badges */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Badges ({badges.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {badges.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No badges earned yet</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {badges.map((b) => (
+                    <div key={b.id} className="flex items-center gap-1.5 px-2 py-1 rounded-lg border bg-white dark:bg-muted/50" title={b.description}>
+                      <span className="text-base">{b.icon}</span>
+                      <span className="text-xs font-medium">{b.name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
