@@ -270,7 +270,7 @@ export default function Navbar() {
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0">
             <div className="flex flex-col h-full">
-              <div className="flex items-center gap-2.5 p-5 border-b">
+              <div className="flex items-center gap-2.5 px-5 pb-5 border-b" style={{ paddingTop: 'max(1.25rem, env(safe-area-inset-top))' }}>
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-white">
                   <Repeat2 className="h-5 w-5" />
                 </div>

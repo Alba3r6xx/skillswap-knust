@@ -81,7 +81,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-background">
-      <div className="container mx-auto px-4 py-6 max-w-5xl">
+      <div className="container mx-auto px-4 pt-4 pb-6 max-w-5xl">
         <h1 className="text-2xl font-bold mb-6">
           Welcome back, {user.name.split(" ")[0]}! 👋
         </h1>
