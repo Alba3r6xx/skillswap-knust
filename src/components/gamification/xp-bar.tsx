@@ -35,7 +35,7 @@ export function XPBar({ xp, compact = false, className }: XPBarProps) {
   }
 
   return (
-    <div className={cn("rounded-xl border bg-card p-4", className)}>
+    <div className={cn("rounded-xl bg-card p-4 shadow-[0_1px_4px_0_oklch(0_0_0/0.08)]", className)}>
       <div className="flex items-center gap-3 mb-3">
         <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center", tier.bg)}>
           <span className="text-xl leading-none">{tier.icon}</span>

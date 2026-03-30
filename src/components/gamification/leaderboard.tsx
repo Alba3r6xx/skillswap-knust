@@ -40,7 +40,7 @@ export function Leaderboard({ currentUserId, limit = 5, className }: Leaderboard
   }, [limit]);
 
   return (
-    <div className={cn("rounded-xl border bg-card", className)}>
+    <div className={cn("rounded-xl bg-card shadow-[0_1px_4px_0_oklch(0_0_0/0.08)]", className)}>
       <div className="flex items-center gap-2 px-4 py-3 border-b">
         <Trophy className="h-4 w-4 text-gold-500" />
         <h3 className="font-semibold text-sm">Top Traders This Week</h3>

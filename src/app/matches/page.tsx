@@ -197,15 +197,25 @@ export default function MatchesPage() {
 
   return (
     <div className="min-h-dvh bg-background">
-      <div className="mx-auto px-4 pt-4 md:pt-8 pb-8 max-w-4xl">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold tracking-tight">Your Matches</h1>
-          {mutual.length > 0 && (
-            <span className="text-xs bg-gold-100 text-navy-800 dark:bg-gold-500/20 dark:text-gold-300 px-3 py-1.5 rounded-full font-semibold">
-              {mutual.length} perfect match{mutual.length > 1 ? "es" : ""}
-            </span>
-          )}
+      {/* ── Navy page banner ── */}
+      <div className="bg-navy-900 pt-4 md:pt-8 pb-14 px-4">
+        <div className="mx-auto max-w-4xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-white">Your Matches</h1>
+              <p className="text-sm text-navy-300 mt-1">Students who complement your skills</p>
+            </div>
+            {mutual.length > 0 && (
+              <span className="text-xs bg-gold-500/20 text-gold-300 px-3 py-1.5 rounded-full font-semibold">
+                {mutual.length} perfect match{mutual.length > 1 ? "es" : ""}
+              </span>
+            )}
+          </div>
         </div>
+      </div>
+
+      {/* ── Content overlapping banner ── */}
+      <div className="mx-auto px-4 -mt-8 pb-8 max-w-4xl relative z-10">
 
         {matches.length === 0 ? (
           <EmptyState

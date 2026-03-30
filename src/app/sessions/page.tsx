@@ -164,7 +164,7 @@ export default function SessionsPage() {
                 </Badge>
               </div>
               <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                <span>📅 {new Date(session.date).toLocaleDateString()} at {session.time}</span>
+                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {new Date(session.date).toLocaleDateString()} at {session.time}</span>
                 <span className="flex items-center gap-0.5">
                   {session.mode === "online" ? <Monitor className="h-3 w-3" /> : <MapPin className="h-3 w-3" />}
                   {session.mode}
@@ -271,8 +271,16 @@ export default function SessionsPage() {
 
   return (
     <div className="min-h-dvh bg-background">
-      <div className="mx-auto px-4 pt-4 md:pt-8 pb-8 max-w-3xl">
-        <h1 className="text-3xl font-bold tracking-tight mb-6">Sessions</h1>
+      {/* ── Navy page banner ── */}
+      <div className="bg-navy-900 pt-4 md:pt-8 pb-14 px-4">
+        <div className="mx-auto max-w-3xl">
+          <h1 className="text-3xl font-bold tracking-tight text-white">Sessions</h1>
+          <p className="text-sm text-navy-300 mt-1">Manage your upcoming and past swaps</p>
+        </div>
+      </div>
+
+      {/* ── Content overlapping banner ── */}
+      <div className="mx-auto px-4 -mt-8 pb-8 max-w-3xl relative z-10">
 
         <Tabs defaultValue="upcoming">
           <TabsList className="mb-4">

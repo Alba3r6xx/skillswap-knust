@@ -26,7 +26,6 @@ import {
 import { XPBar } from "@/components/gamification/xp-bar";
 import { StreakCard } from "@/components/gamification/streak-card";
 import { Leaderboard } from "@/components/gamification/leaderboard";
-import { OnlineCount } from "@/components/social-proof/online-count";
 import { ActivityStream } from "@/components/social-proof/activity-stream";
 import { EmptyState } from "@/components/empty-state";
 import { computeSwapStreak, getProfileCompletion, computeAchievements, RARITY_STYLES } from "@/lib/gamification";
@@ -103,26 +102,31 @@ export default function DashboardPage() {
     <div className="min-h-dvh bg-background">
       <ActivityStream currentUserId={user.id} />
 
-      <div className="mx-auto px-4 pt-4 md:pt-8 pb-8 max-w-5xl">
-
-        {/* Header row */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 content-fade-in">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-navy-900 dark:text-foreground">
-              Hey, {user.name.split(" ")[0]}
-            </h1>
-            <OnlineCount variant="inline" className="mt-1" />
+      {/* ── Navy page banner ── */}
+      <div className="bg-navy-900 pt-4 md:pt-8 pb-14 px-4">
+        <div className="mx-auto max-w-5xl">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 content-fade-in">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-white">
+                Hey, {user.name.split(" ")[0]}
+              </h1>
+              <p className="text-sm text-navy-300 mt-1">Your learning at a glance</p>
+            </div>
+            {pending.length > 0 && (
+              <Link href="/sessions">
+                <div className="inline-flex items-center gap-2 rounded-full bg-primary text-white px-4 py-2.5 text-sm font-semibold
+                  shadow-[0_2px_8px_oklch(0.769_0.188_70/0.3)] hover:brightness-105 transition-all active:scale-[0.97]">
+                  <Bell className="h-4 w-4" />
+                  {pending.length} request{pending.length > 1 ? "s" : ""} waiting — review now
+                </div>
+              </Link>
+            )}
           </div>
-          {pending.length > 0 && (
-            <Link href="/sessions">
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary text-white px-4 py-2.5 text-sm font-semibold
-                shadow-[0_2px_8px_oklch(0.769_0.188_70/0.3)] hover:brightness-105 transition-all active:scale-[0.97]">
-                <Bell className="h-4 w-4" />
-                {pending.length} request{pending.length > 1 ? "s" : ""} waiting — review now
-              </div>
-            </Link>
-          )}
         </div>
+      </div>
+
+      {/* ── Content overlapping banner ── */}
+      <div className="mx-auto px-4 -mt-8 pb-8 max-w-5xl relative z-10">
 
         {/* Profile completion nudge */}
         {profileScore < 100 && (
@@ -253,7 +257,7 @@ export default function DashboardPage() {
                     {upcoming.slice(0, 3).map((session) => (
                       <div
                         key={session.id}
-                        className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                        className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
                       >
                         <div>
                           <p className="text-sm font-medium">{session.skill}</p>

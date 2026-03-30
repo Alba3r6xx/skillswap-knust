@@ -162,8 +162,16 @@ export default function ProfilePage() {
 
   return (
     <div className="bg-background min-h-dvh">
-      <div className="container mx-auto px-4 pt-4 md:pt-8 pb-24 max-w-2xl">
-        <h1 className="text-3xl font-bold tracking-tight text-navy-900 dark:text-foreground mb-6">Your Profile</h1>
+      {/* ── Navy page banner ── */}
+      <div className="bg-navy-900 pt-4 md:pt-8 pb-14 px-4">
+        <div className="container mx-auto max-w-2xl">
+          <h1 className="text-3xl font-bold tracking-tight text-white">Your Profile</h1>
+          <p className="text-sm text-navy-300 mt-1">Keep it fresh — better profiles get better matches</p>
+        </div>
+      </div>
+
+      {/* ── Content overlapping banner ── */}
+      <div className="container mx-auto px-4 -mt-8 pb-24 max-w-2xl relative z-10">
 
         {/* ── Profile header card ── */}
         <Card className="mb-6">

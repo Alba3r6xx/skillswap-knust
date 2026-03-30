@@ -73,23 +73,28 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-dvh bg-background">
-      <div className="mx-auto px-4 pt-4 md:pt-8 pb-8 max-w-4xl">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold tracking-tight">Find Peers</h1>
-          <OnlineCount variant="badge" />
-        </div>
-
-        {/* Search + Filters */}
-        <div className="space-y-3 mb-6">
+      {/* ── Navy page banner ── */}
+      <div className="bg-navy-900 pt-4 md:pt-8 pb-14 px-4">
+        <div className="mx-auto max-w-4xl">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-3xl font-bold tracking-tight text-white">Find Peers</h1>
+            <OnlineCount variant="badge" />
+          </div>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-navy-400" />
             <Input
               placeholder="Search by name or skill..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-navy-800 border-navy-700 text-white placeholder:text-navy-400 focus-visible:ring-primary"
             />
           </div>
+        </div>
+      </div>
+
+      {/* ── Content overlapping banner ── */}
+      <div className="mx-auto px-4 -mt-8 pb-8 max-w-4xl relative z-10">
+        <Card className="p-4 mb-6">
           <div className="flex flex-wrap gap-2">
             <Select value={faculty} onValueChange={setFaculty}>
               <SelectTrigger className="w-[180px]">
@@ -137,7 +142,7 @@ export default function SearchPage() {
               </Button>
             )}
           </div>
-        </div>
+        </Card>
 
         {/* Results */}
         {loading ? (

@@ -32,7 +32,7 @@ export function StreakCard({ streak, compact = false, className }: StreakCardPro
   }
 
   return (
-    <div className={cn("rounded-xl border bg-card p-4 flex items-center gap-4", className)}>
+    <div className={cn("rounded-xl bg-card p-4 flex items-center gap-4 shadow-[0_1px_4px_0_oklch(0_0_0/0.08)]", className)}>
       <div className={cn(
         "h-12 w-12 rounded-xl flex items-center justify-center text-2xl",
         streak === 0 ? "bg-gray-100 dark:bg-muted" :
