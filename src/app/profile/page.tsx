@@ -24,6 +24,7 @@ import {
   User,
   Calendar,
   CheckCircle2,
+  LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -53,7 +54,7 @@ function useCompleteness(user: { name?: string; bio?: string; faculty?: string; 
 }
 
 export default function ProfilePage() {
-  const { user, isLoading, refreshProfile } = useAuth();
+  const { user, isLoading, refreshProfile, signOut } = useAuth();
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<Tab>("profile");
@@ -460,6 +461,18 @@ export default function ProfilePage() {
             </Button>
           </div>
         )}
+
+        {/* Sign out — always visible at bottom */}
+        <div className="mt-8 pt-6 border-t">
+          <Button
+            variant="outline"
+            className="w-full text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-500/30 dark:hover:bg-red-500/10 gap-2"
+            onClick={() => signOut()}
+          >
+            <LogOut className="h-4 w-4" />
+            Sign out
+          </Button>
+        </div>
       </div>
     </div>
   );

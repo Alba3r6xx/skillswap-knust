@@ -106,6 +106,44 @@ create table if not exists public.push_subscriptions (
 );
 
 
+-- 7. Study Groups
+create table if not exists public.groups (
+  id          uuid default gen_random_uuid() primary key,
+  name        text        not null,
+  description text        default '',
+  avatar_url  text        default '',
+  created_by  uuid references public.profiles(id) on delete cascade not null,
+  created_at  timestamptz default now()
+);
+
+-- 8. Group members
+create table if not exists public.group_members (
+  id          uuid default gen_random_uuid() primary key,
+  group_id    uuid references public.groups(id) on delete cascade not null,
+  user_id     uuid references public.profiles(id) on delete cascade not null,
+  role        text default 'member'
+                check (role in ('admin','member')),
+  joined_at   timestamptz default now(),
+  unique (group_id, user_id)
+);
+
+-- 9. Group messages
+create table if not exists public.group_messages (
+  id               uuid default gen_random_uuid() primary key,
+  group_id         uuid references public.groups(id) on delete cascade not null,
+  sender_id        uuid references public.profiles(id) on delete cascade not null,
+  content          text        not null,
+  type             text default 'text'
+                     check (type in ('text','audio','image','document')),
+  reply_to         uuid references public.group_messages(id) on delete set null,
+  reply_preview    text,
+  reply_sender_id  uuid,
+  deleted_at       timestamptz,
+  edited_at        timestamptz,
+  created_at       timestamptz default now()
+);
+
+
 -- ──────────────────────────────────────────────────────────
 --  ROW LEVEL SECURITY
 -- ──────────────────────────────────────────────────────────
@@ -116,6 +154,9 @@ alter table public.messages          enable row level security;
 alter table public.message_reactions enable row level security;
 alter table public.notifications     enable row level security;
 alter table public.push_subscriptions enable row level security;
+alter table public.groups            enable row level security;
+alter table public.group_members     enable row level security;
+alter table public.group_messages    enable row level security;
 
 -- Profiles
 do $$ begin
@@ -217,6 +258,68 @@ do $$ begin
   end if;
 end $$;
 
+-- Groups
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='groups' and policyname='Group members can view groups') then
+    create policy "Group members can view groups"
+      on public.groups for select using (
+        exists (select 1 from public.group_members where group_id = id and user_id = auth.uid())
+      );
+  end if;
+  if not exists (select 1 from pg_policies where tablename='groups' and policyname='Authenticated users can create groups') then
+    create policy "Authenticated users can create groups"
+      on public.groups for insert with check (auth.uid() = created_by);
+  end if;
+  if not exists (select 1 from pg_policies where tablename='groups' and policyname='Group admins can update groups') then
+    create policy "Group admins can update groups"
+      on public.groups for update using (
+        exists (select 1 from public.group_members where group_id = id and user_id = auth.uid() and role = 'admin')
+      );
+  end if;
+end $$;
+
+-- Group members
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='group_members' and policyname='Group members can view membership') then
+    create policy "Group members can view membership"
+      on public.group_members for select using (
+        exists (select 1 from public.group_members gm2 where gm2.group_id = group_id and gm2.user_id = auth.uid())
+      );
+  end if;
+  if not exists (select 1 from pg_policies where tablename='group_members' and policyname='Group admins can manage members') then
+    create policy "Group admins can manage members"
+      on public.group_members for insert with check (
+        auth.uid() = user_id or
+        exists (select 1 from public.group_members where group_id = group_members.group_id and user_id = auth.uid() and role = 'admin')
+      );
+  end if;
+  if not exists (select 1 from pg_policies where tablename='group_members' and policyname='Members can leave groups') then
+    create policy "Members can leave groups"
+      on public.group_members for delete using (auth.uid() = user_id);
+  end if;
+end $$;
+
+-- Group messages
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='group_messages' and policyname='Group members can view messages') then
+    create policy "Group members can view messages"
+      on public.group_messages for select using (
+        exists (select 1 from public.group_members where group_id = group_messages.group_id and user_id = auth.uid())
+      );
+  end if;
+  if not exists (select 1 from pg_policies where tablename='group_messages' and policyname='Group members can send messages') then
+    create policy "Group members can send messages"
+      on public.group_messages for insert with check (
+        auth.uid() = sender_id and
+        exists (select 1 from public.group_members where group_id = group_messages.group_id and user_id = auth.uid())
+      );
+  end if;
+  if not exists (select 1 from pg_policies where tablename='group_messages' and policyname='Senders can update own messages') then
+    create policy "Senders can update own messages"
+      on public.group_messages for update using (auth.uid() = sender_id);
+  end if;
+end $$;
+
 
 -- ──────────────────────────────────────────────────────────
 --  FUNCTIONS & TRIGGERS
@@ -279,6 +382,7 @@ $$;
 -- Full replica identity so UPDATE events carry all columns
 alter table public.messages          replica identity full;
 alter table public.notifications     replica identity full;
+alter table public.group_messages    replica identity full;
 
 -- Add tables to the Supabase realtime publication
 do $$
@@ -294,6 +398,12 @@ begin
     where pubname = 'supabase_realtime' and tablename = 'notifications'
   ) then
     alter publication supabase_realtime add table public.notifications;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and tablename = 'group_messages'
+  ) then
+    alter publication supabase_realtime add table public.group_messages;
   end if;
 end $$;
 

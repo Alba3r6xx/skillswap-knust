@@ -4,8 +4,8 @@ import { Suspense, useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { getConversations, getMessagesBetween, sendMessage, markMessagesAsRead, getProfileById, deleteMessage, togglePinMessage, editMessage, forwardMessage, addReaction, removeReaction, getReactionsForMessages, searchMessages, updateLastSeen, getTimeSinceLastSeen } from "@/lib/data";
-import { Message, Profile, Reaction } from "@/lib/types";
+import { getConversations, getMessagesBetween, sendMessage, markMessagesAsRead, getProfileById, deleteMessage, togglePinMessage, editMessage, forwardMessage, addReaction, removeReaction, getReactionsForMessages, searchMessages, updateLastSeen, getTimeSinceLastSeen, createGroup, getGroupsForUser, getGroupMessages, sendGroupMessage, getGroupMembers, leaveGroup, deleteGroupMessage, editGroupMessage } from "@/lib/data";
+import { Message, Profile, Reaction, Group, GroupMember, GroupMessage } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,9 @@ import {
   Search,
   Forward,
   Pencil,
+  Users,
+  UserPlus,
+  LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -277,6 +280,26 @@ function MessagesContent() {
   const [forwardMsg, setForwardMsg] = useState<Message | null>(null);
   const QUICK_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
+  // ── Groups state ────────────────────────────────────────────
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [groupMsgs, setGroupMsgs] = useState<GroupMessage[]>([]);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
+  const [groupMemberProfiles, setGroupMemberProfiles] = useState<Record<string, Profile>>({});
+  const [groupLastMsgs, setGroupLastMsgs] = useState<Record<string, GroupMessage>>({});
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupDesc, setNewGroupDesc] = useState("");
+  const [newGroupMemberIds, setNewGroupMemberIds] = useState<string[]>([]);
+  const [creatingGroup, setCreatingGroup] = useState(false);
+
+  // ── Swipe-to-reply + swipe-back state ───────────────────────
+  const [swipingMsgId, setSwipingMsgId] = useState<string | null>(null);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const swipeTouchStartX = useRef(0);
+  const swipeTouchStartY = useRef(0);
+  const chatBackSwipeRef = useRef(0);
+
   useEffect(() => {
     isTouchDevice.current = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   }, []);
@@ -420,6 +443,107 @@ function MessagesContent() {
     const interval = setInterval(() => updateLastSeen(user.id), 60000);
     return () => clearInterval(interval);
   }, [user]);
+
+  // ── Group effects ────────────────────────────────────────────
+  const fetchGroups = useCallback(async () => {
+    if (!user) return;
+    const gs = await getGroupsForUser(user.id);
+    setGroups(gs);
+    const lastMsgsMap: Record<string, GroupMessage> = {};
+    await Promise.all(
+      gs.map(async (g) => {
+        const msgs = await getGroupMessages(g.id);
+        if (msgs.length > 0) lastMsgsMap[g.id] = msgs[msgs.length - 1];
+      })
+    );
+    setGroupLastMsgs(lastMsgsMap);
+  }, [user]);
+
+  useEffect(() => { fetchGroups(); }, [fetchGroups]);
+
+  useEffect(() => {
+    if (!user || !selectedGroupId) return;
+    const loadGroup = async () => {
+      const [msgs, members] = await Promise.all([
+        getGroupMessages(selectedGroupId),
+        getGroupMembers(selectedGroupId),
+      ]);
+      setGroupMsgs(msgs);
+      setGroupMembers(members);
+      const profileMap: Record<string, Profile> = {};
+      members.forEach((m) => { if (m.profile) profileMap[m.user_id] = m.profile as unknown as Profile; });
+      setGroupMemberProfiles(profileMap);
+    };
+    loadGroup();
+
+    const channel = supabase
+      .channel(`group-${selectedGroupId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "group_messages", filter: `group_id=eq.${selectedGroupId}` },
+        (payload) => {
+          const newMsg = payload.new as GroupMessage;
+          setGroupMsgs((prev) => [...prev, newMsg]);
+          fetchGroups();
+        }
+      )
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "group_messages" },
+        (payload) => {
+          const updated = payload.new as GroupMessage;
+          setGroupMsgs((prev) => prev.map((m) => m.id === updated.id ? { ...m, ...updated } : m));
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedGroupId, user, fetchGroups]);
+
+  const handleSendGroupMessage = async () => {
+    if (!newMessage.trim() || !user || !selectedGroupId || sending) return;
+    setSending(true);
+    const payload: Parameters<typeof sendGroupMessage>[0] = {
+      group_id: selectedGroupId,
+      sender_id: user.id,
+      content: newMessage.trim(),
+      type: "text",
+    };
+    if (replyTo) {
+      payload.reply_to = replyTo.id;
+      payload.reply_preview = getReplyPreviewText(replyTo.type, replyTo.content);
+      payload.reply_sender_id = replyTo.sender_id;
+    }
+    const { data } = await sendGroupMessage(payload);
+    if (data) { setGroupMsgs((prev) => [...prev, data]); fetchGroups(); }
+    setNewMessage("");
+    if (inputRef.current) inputRef.current.textContent = "";
+    setReplyTo(null);
+    setSending(false);
+  };
+
+  const handleCreateGroup = async () => {
+    if (!newGroupName.trim() || !user || newGroupMemberIds.length === 0) {
+      toast.error("Add a group name and at least one member");
+      return;
+    }
+    setCreatingGroup(true);
+    const group = await createGroup(newGroupName.trim(), newGroupDesc.trim(), newGroupMemberIds, user.id);
+    setCreatingGroup(false);
+    if (group) {
+      toast.success("Study group created!");
+      setShowCreateGroup(false);
+      setNewGroupName(""); setNewGroupDesc(""); setNewGroupMemberIds([]);
+      await fetchGroups();
+      setSelectedGroupId(group.id);
+      setSelectedPeerId(null);
+    } else {
+      toast.error("Failed to create group");
+    }
+  };
+
+  // Helper for reply previews (used by both DM and group)
+  const getReplyPreviewText = (type: string, content: string) => {
+    if (type === "audio") return "🎤 Voice note";
+    if (type === "image") return "📷 Photo";
+    if (type === "document") return "📄 Document";
+    return content.length > 60 ? content.slice(0, 60) + "..." : content;
+  };
 
   const getReplyPreview = (msg: Message) => {
     if (msg.type === "audio") return "🎤 Voice note";
@@ -862,16 +986,23 @@ function MessagesContent() {
   return (
     <div className="bg-background flex flex-col overflow-hidden h-dvh pt-[calc(3rem+env(safe-area-inset-top))] md:pt-0 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
       {/* Header - only show on conversation list view or desktop */}
-      <div className={`${selectedPeerId ? "hidden md:block" : "block"} px-4 pt-4 pb-2 md:pt-6 md:pb-4 max-w-4xl mx-auto w-full`}>
+      <div className={`${(selectedPeerId || selectedGroupId) ? "hidden md:block" : "block"} px-4 pt-4 pb-2 md:pt-6 md:pb-4 max-w-4xl mx-auto w-full`}>
         <h1 className="text-2xl font-bold">Messages</h1>
       </div>
 
       <div className="flex-1 flex flex-col md:flex-row max-w-4xl mx-auto w-full px-4 pb-4 min-h-0">
         <div className="flex-1 flex md:rounded-xl md:border md:overflow-hidden min-h-0">
           {/* Conversation List */}
-          <div className={`${selectedPeerId ? "hidden md:flex" : "flex"} flex-col w-full md:w-80 md:border-r min-h-0`}>
-            <div className="p-3 border-b bg-background">
+          <div className={`${(selectedPeerId || selectedGroupId) ? "hidden md:flex" : "flex"} flex-col w-full md:w-80 md:border-r min-h-0`}>
+            <div className="p-3 border-b bg-background flex items-center justify-between">
               <p className="text-sm font-medium text-muted-foreground">Conversations</p>
+              <button
+                className="h-7 w-7 rounded-full bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-colors"
+                title="New study group"
+                onClick={() => setShowCreateGroup(true)}
+              >
+                <UserPlus className="h-3.5 w-3.5" />
+              </button>
             </div>
             <div className="flex-1 overflow-y-auto bg-background">
               {loading ? (
@@ -924,7 +1055,7 @@ function MessagesContent() {
                         className={`flex items-center gap-3 w-full p-3 border-b hover:bg-navy-50 dark:hover:bg-muted transition-colors text-left ${
                           isActive ? "bg-gold-50 dark:bg-gold-500/10" : ""
                         }`}
-                        onClick={() => setSelectedPeerId(conv.peerId)}
+                        onClick={() => { setSelectedPeerId(conv.peerId); setSelectedGroupId(null); }}
                       >
                         <Avatar className="h-10 w-10 shrink-0">
                           {peer.avatar_url ? (
@@ -969,14 +1100,75 @@ function MessagesContent() {
                       </button>
                     );
                   })}
+
+                  {/* ── Study Groups ── */}
+                  {groups.length > 0 && (
+                    <div className="px-3 pt-3 pb-1">
+                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                        <Users className="h-3 w-3" /> Study Groups
+                      </p>
+                    </div>
+                  )}
+                  {groups.map((group) => {
+                    const lastMsg = groupLastMsgs[group.id];
+                    const isActive = selectedGroupId === group.id;
+                    const groupInitials = group.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+                    return (
+                      <button
+                        key={group.id}
+                        className={`flex items-center gap-3 w-full p-3 border-b hover:bg-navy-50 dark:hover:bg-muted transition-colors text-left ${
+                          isActive ? "bg-gold-50 dark:bg-gold-500/10" : ""
+                        }`}
+                        onClick={() => { setSelectedGroupId(group.id); setSelectedPeerId(null); }}
+                      >
+                        <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-sky-500 to-navy-700 flex items-center justify-center text-white text-sm font-bold">
+                          {groupInitials}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium truncate flex items-center gap-1">
+                              {group.name}
+                            </p>
+                            {lastMsg && (
+                              <span className="text-[10px] text-muted-foreground shrink-0">
+                                {new Date(lastMsg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {lastMsg ? (
+                              lastMsg.deleted_at ? "Message deleted" :
+                              lastMsg.type === "audio" ? "🎤 Voice note" :
+                              lastMsg.type === "image" ? "📷 Photo" :
+                              lastMsg.type === "document" ? "📄 Document" :
+                              lastMsg.content
+                            ) : (
+                              <span className="italic">No messages yet</span>
+                            )}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </>
               )}
             </div>
           </div>
 
           {/* Chat Area */}
-          <div className={`${selectedPeerId ? "fixed inset-0 z-50 md:relative md:inset-auto md:z-auto flex" : "hidden md:flex"} flex-col flex-1 bg-background min-h-0`}>
-            {!selectedPeerId ? (
+          <div
+            className={`${(selectedPeerId || selectedGroupId) ? "fixed inset-0 z-50 md:relative md:inset-auto md:z-auto flex" : "hidden md:flex"} flex-col flex-1 bg-background min-h-0`}
+            onTouchStart={(e) => { chatBackSwipeRef.current = e.touches[0].clientX; }}
+            onTouchEnd={(e) => {
+              const dx = e.changedTouches[0].clientX - chatBackSwipeRef.current;
+              if (dx > 70 && chatBackSwipeRef.current < 40) {
+                setSelectedPeerId(null);
+                setSelectedGroupId(null);
+                if (navigator.vibrate) navigator.vibrate(20);
+              }
+            }}
+          >
+            {!selectedPeerId && !selectedGroupId ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
                   <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
@@ -991,11 +1183,13 @@ function MessagesContent() {
                     variant="ghost"
                     size="icon"
                     className="md:hidden shrink-0 h-8 w-8"
-                    onClick={() => setSelectedPeerId(null)}
+                    onClick={() => { setSelectedPeerId(null); setSelectedGroupId(null); }}
                   >
                     <ArrowLeft className="h-4 w-4" />
                   </Button>
-                  {selectedPeer && (
+
+                  {/* DM header */}
+                  {selectedPeer && selectedPeerId && (
                     <Link href={`/profile/${selectedPeerId}`} className="flex items-center gap-2.5 min-w-0 flex-1">
                       <div className="relative shrink-0">
                         <Avatar className="h-9 w-9">
@@ -1021,12 +1215,46 @@ function MessagesContent() {
                       </div>
                     </Link>
                   )}
-                  <button
-                    className="h-8 w-8 rounded-full hover:bg-navy-50 dark:hover:bg-navy-900/40 flex items-center justify-center shrink-0"
-                    onClick={() => { setSearchOpen(!searchOpen); setSearchQuery(""); setSearchResults([]); }}
-                  >
-                    <Search className="h-4 w-4 text-muted-foreground" />
-                  </button>
+
+                  {/* Group header */}
+                  {selectedGroupId && (() => {
+                    const grp = groups.find(g => g.id === selectedGroupId);
+                    if (!grp) return null;
+                    const gInitials = grp.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+                    return (
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <div className="h-9 w-9 shrink-0 rounded-full bg-gradient-to-br from-sky-500 to-navy-700 flex items-center justify-center text-white text-sm font-bold">
+                          {gInitials}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold truncate">{grp.name}</p>
+                          <p className="text-xs text-muted-foreground">{groupMembers.length} members</p>
+                        </div>
+                        <button
+                          className="ml-auto h-7 w-7 rounded-full hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center justify-center text-red-500 shrink-0"
+                          title="Leave group"
+                          onClick={async () => {
+                            if (!user) return;
+                            await leaveGroup(grp.id, user.id);
+                            toast.success("Left group");
+                            setSelectedGroupId(null);
+                            fetchGroups();
+                          }}
+                        >
+                          <LogOut className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })()}
+
+                  {selectedPeerId && (
+                    <button
+                      className="h-8 w-8 rounded-full hover:bg-navy-50 dark:hover:bg-navy-900/40 flex items-center justify-center shrink-0"
+                      onClick={() => { setSearchOpen(!searchOpen); setSearchQuery(""); setSearchResults([]); }}
+                    >
+                      <Search className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  )}
                 </div>
 
                 {/* Search bar */}
@@ -1094,7 +1322,118 @@ function MessagesContent() {
                   </button>
                 )}
 
-                {/* Messages */}
+                {/* ── Group Messages ── */}
+                {selectedGroupId && (
+                  <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-3 min-h-0 bg-navy-50/30 dark:bg-zinc-950/50" onClick={() => setContextMenu(null)}>
+                    {groupMsgs.length === 0 && (
+                      <div className="text-center py-20">
+                        <div className="h-14 w-14 mx-auto mb-3 rounded-full bg-sky-100 dark:bg-sky-500/10 flex items-center justify-center">
+                          <Users className="h-6 w-6 text-sky-500" />
+                        </div>
+                        <p className="text-sm font-medium text-muted-foreground">No messages yet</p>
+                        <p className="text-xs text-muted-foreground/50 mt-1">Start the group conversation</p>
+                      </div>
+                    )}
+                    {groupMsgs.map((msg, idx) => {
+                      const isMine = msg.sender_id === user.id;
+                      const prevMsg = idx > 0 ? groupMsgs[idx - 1] : null;
+                      const sameSender = prevMsg?.sender_id === msg.sender_id;
+                      const isDeleted = !!msg.deleted_at;
+                      const showTail = !sameSender;
+                      const senderProfile = groupMemberProfiles[msg.sender_id];
+                      const senderName = isMine ? "You" : (senderProfile?.name?.split(" ")[0] || "Member");
+                      const showSenderName = !isMine && !sameSender;
+                      const msgDate = new Date(msg.created_at);
+                      const prevMsgDate = prevMsg ? new Date(prevMsg.created_at) : null;
+                      const showDateSep = !prevMsgDate || msgDate.toDateString() !== prevMsgDate.toDateString();
+
+                      return (
+                        <div key={msg.id}>
+                          {showDateSep && (
+                            <div className="flex items-center justify-center my-3">
+                              <span className="text-[11px] text-muted-foreground bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm px-3 py-0.5 rounded-full shadow-sm">
+                                {getDateLabel(msgDate)}
+                              </span>
+                            </div>
+                          )}
+                          <div
+                            id={`gmsg-${msg.id}`}
+                            className={`flex ${isMine ? "justify-end" : "justify-start"} ${showTail ? "mt-2.5" : "mt-[3px]"}`}
+                            onTouchStart={(e) => {
+                              swipeTouchStartX.current = e.touches[0].clientX;
+                              swipeTouchStartY.current = e.touches[0].clientY;
+                            }}
+                            onTouchMove={(e) => {
+                              if (isDeleted) return;
+                              const dx = e.touches[0].clientX - swipeTouchStartX.current;
+                              const dy = Math.abs(e.touches[0].clientY - swipeTouchStartY.current);
+                              if (dy > 15) { setSwipingMsgId(null); setSwipeOffset(0); return; }
+                              if (dx > 5) { setSwipingMsgId(`g-${msg.id}`); setSwipeOffset(Math.min(dx, 70)); }
+                            }}
+                            onTouchEnd={() => {
+                              if (swipeOffset > 45 && swipingMsgId === `g-${msg.id}`) {
+                                setReplyTo({ ...msg, receiver_id: "", read: false, delivered: false } as unknown as Message);
+                                if (navigator.vibrate) navigator.vibrate(50);
+                              }
+                              setSwipingMsgId(null); setSwipeOffset(0);
+                            }}
+                          >
+                            {!isMine && showTail && (
+                              <div className="mr-1.5 shrink-0 self-end mb-1">
+                                <div className="h-7 w-7 rounded-full bg-gradient-to-br from-sky-400 to-navy-600 flex items-center justify-center text-white text-[11px] font-bold">
+                                  {senderProfile?.name?.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0,2) || "?"}
+                                </div>
+                              </div>
+                            )}
+                            {!isMine && !showTail && <div className="mr-1.5 w-7 shrink-0" />}
+                            <div
+                              className="max-w-[80%] sm:max-w-[65%] relative"
+                              style={{
+                                transform: swipingMsgId === `g-${msg.id}` ? `translateX(${swipeOffset}px)` : undefined,
+                                transition: swipingMsgId === `g-${msg.id}` ? "none" : "transform 0.2s ease-out",
+                              }}
+                            >
+                              {showSenderName && (
+                                <p className="text-[11px] font-semibold text-sky-600 dark:text-sky-400 mb-0.5 ml-1">{senderName}</p>
+                              )}
+                              <div className={`px-3 py-1.5 text-[14.5px] shadow-sm ${
+                                isMine
+                                  ? `bg-gradient-to-br from-gold-500 to-gold-600 text-white ${showTail ? "rounded-2xl rounded-tr-sm" : "rounded-2xl"}`
+                                  : `bg-card dark:bg-zinc-800 ${showTail ? "rounded-2xl rounded-tl-sm" : "rounded-2xl"}`
+                              }`}>
+                                {isDeleted ? (
+                                  <p className={`italic text-[13px] ${isMine ? "text-white/50" : "text-muted-foreground"}`}>This message was deleted</p>
+                                ) : (
+                                  <>
+                                    {msg.reply_preview && (
+                                      <div className={`mb-0.5 px-1.5 py-0.5 rounded border-l-2 ${isMine ? "bg-white/10 border-white/30 text-white/70" : "bg-navy-50 dark:bg-zinc-700/40 border-gold-400 text-muted-foreground"}`}>
+                                        <p className="text-[11px] truncate">{msg.reply_preview}</p>
+                                      </div>
+                                    )}
+                                    <p>{msg.content}</p>
+                                    <p className={`text-[10px] mt-0.5 text-right ${isMine ? "text-white/60" : "text-muted-foreground"}`}>
+                                      {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                      {msg.edited_at && " · edited"}
+                                    </p>
+                                  </>
+                                )}
+                              </div>
+                              {swipingMsgId === `g-${msg.id}` && swipeOffset > 10 && (
+                                <div className={`absolute top-1/2 -translate-y-1/2 ${isMine ? "-left-8" : "-right-8"} text-primary opacity-80`} style={{ opacity: Math.min(1, swipeOffset / 50) }}>
+                                  <Reply className="h-4 w-4" />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
+
+                {/* ── DM Messages ── */}
+                {selectedPeerId && (
                 <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-3 min-h-0 bg-navy-50/30 dark:bg-zinc-950/50" onClick={() => setContextMenu(null)}>
                   {messages.length === 0 && (
                     <div className="text-center py-20">
@@ -1139,15 +1478,45 @@ function MessagesContent() {
                           onContextMenu={(e) => { e.preventDefault(); openContextMenu(msg, e.clientX, e.clientY); }}
                           onTouchStart={(e) => {
                             const t = e.touches[0];
+                            swipeTouchStartX.current = t.clientX;
+                            swipeTouchStartY.current = t.clientY;
                             longPressTimer.current = setTimeout(() => {
                               openContextMenu(msg, t.clientX, t.clientY);
                               if (navigator.vibrate) navigator.vibrate(30);
                             }, 400);
                           }}
-                          onTouchEnd={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
-                          onTouchMove={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
+                          onTouchMove={(e) => {
+                            if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+                            if (isDeleted) return;
+                            const dx = e.touches[0].clientX - swipeTouchStartX.current;
+                            const dy = Math.abs(e.touches[0].clientY - swipeTouchStartY.current);
+                            if (dy > 15) { setSwipingMsgId(null); setSwipeOffset(0); return; }
+                            if (dx > 5) { setSwipingMsgId(msg.id); setSwipeOffset(Math.min(dx, 70)); }
+                          }}
+                          onTouchEnd={() => {
+                            if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+                            if (swipeOffset > 45 && swipingMsgId === msg.id) {
+                              handleReply(msg);
+                              if (navigator.vibrate) navigator.vibrate(50);
+                            }
+                            setSwipingMsgId(null); setSwipeOffset(0);
+                          }}
                         >
-                          <div className="max-w-[85%] sm:max-w-[65%]">
+                          <div
+                            className="max-w-[85%] sm:max-w-[65%] relative"
+                            style={{
+                              transform: swipingMsgId === msg.id ? `translateX(${swipeOffset}px)` : undefined,
+                              transition: swipingMsgId === msg.id ? "none" : "transform 0.2s ease-out",
+                            }}
+                          >
+                            {swipingMsgId === msg.id && swipeOffset > 10 && (
+                              <div
+                                className={`absolute top-1/2 -translate-y-1/2 ${isMine ? "-left-8" : "-right-8"} text-primary`}
+                                style={{ opacity: Math.min(1, swipeOffset / 50) }}
+                              >
+                                <Reply className="h-4 w-4" />
+                              </div>
+                            )}
                             <div
                               className={`relative text-[14.5px] ${
                                 isDeleted ? "px-3 py-1.5"
@@ -1263,6 +1632,7 @@ function MessagesContent() {
                   })}
                   <div ref={messagesEndRef} />
                 </div>
+                )}
 
                 {/* Edit mode bar */}
                 {editingMsg && (
@@ -1393,16 +1763,20 @@ function MessagesContent() {
                   ) : (
                     /* Normal text input */
                     <div className="flex items-center gap-1.5">
-                      <button type="button" className="h-9 w-9 rounded-full text-muted-foreground hover:bg-navy-50 dark:hover:bg-zinc-800 shrink-0 flex items-center justify-center active:scale-95" onClick={() => imageInputRef.current?.click()}>
-                        <ImagePlus className="h-5 w-5" />
-                      </button>
-                      <button type="button" className="h-9 w-9 rounded-full text-muted-foreground hover:bg-navy-50 dark:hover:bg-zinc-800 shrink-0 flex items-center justify-center active:scale-95" onClick={() => docInputRef.current?.click()}>
-                        <Paperclip className="h-5 w-5" />
-                      </button>
+                      {selectedPeerId && (
+                        <>
+                          <button type="button" className="h-9 w-9 rounded-full text-muted-foreground hover:bg-navy-50 dark:hover:bg-zinc-800 shrink-0 flex items-center justify-center active:scale-95" onClick={() => imageInputRef.current?.click()}>
+                            <ImagePlus className="h-5 w-5" />
+                          </button>
+                          <button type="button" className="h-9 w-9 rounded-full text-muted-foreground hover:bg-navy-50 dark:hover:bg-zinc-800 shrink-0 flex items-center justify-center active:scale-95" onClick={() => docInputRef.current?.click()}>
+                            <Paperclip className="h-5 w-5" />
+                          </button>
+                        </>
+                      )}
                       <div className="flex-1 relative">
                         {!newMessage && (
                           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-zinc-500 pointer-events-none text-base select-none">
-                            Message
+                            {selectedGroupId ? "Message group..." : "Message"}
                           </div>
                         )}
                         <div
@@ -1413,12 +1787,13 @@ function MessagesContent() {
                           onInput={() => {
                             const text = inputRef.current?.textContent || "";
                             setNewMessage(text);
-                            broadcastTyping();
+                            if (selectedPeerId) broadcastTyping();
                           }}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey && !isTouchDevice.current) {
                               e.preventDefault();
-                              handleSend();
+                              if (selectedGroupId) handleSendGroupMessage();
+                              else handleSend();
                             }
                           }}
                           onPaste={(e) => {
@@ -1431,14 +1806,19 @@ function MessagesContent() {
                         />
                       </div>
                       {newMessage.trim() ? (
-                        <button type="button" disabled={sending} className="h-10 w-10 rounded-full bg-primary hover:brightness-105 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50" onClick={handleSend}>
-                          <Send className="h-4 w-4" />
+                        <button
+                          type="button"
+                          disabled={sending}
+                          className="h-10 w-10 rounded-full bg-primary hover:brightness-105 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50"
+                          onClick={() => selectedGroupId ? handleSendGroupMessage() : handleSend()}
+                        >
+                          {sending ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="h-4 w-4" />}
                         </button>
-                      ) : (
+                      ) : selectedPeerId ? (
                         <button type="button" className="h-10 w-10 rounded-full bg-primary hover:brightness-105 text-white shrink-0 flex items-center justify-center active:scale-95" onClick={startRecording}>
                           <Mic className="h-4 w-4" />
                         </button>
-                      )}
+                      ) : null}
                     </div>
                   )}
                 </div>
@@ -1550,6 +1930,123 @@ function MessagesContent() {
               {conversations.filter(c => c.peerId !== selectedPeerId).length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-8">No other conversations</p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Study Group dialog */}
+      {showCreateGroup && (
+        <div
+          className="fixed inset-0 z-[95] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center"
+          onClick={() => setShowCreateGroup(false)}
+        >
+          <div
+            className="bg-white dark:bg-zinc-900 w-full sm:w-[420px] sm:rounded-2xl rounded-t-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-4 py-3.5 border-b flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-sky-500 to-navy-700 flex items-center justify-center">
+                  <Users className="h-4 w-4 text-white" />
+                </div>
+                <h3 className="font-semibold text-sm">New Study Group</h3>
+              </div>
+              <button className="h-7 w-7 rounded-full hover:bg-navy-50 dark:hover:bg-zinc-800 flex items-center justify-center" onClick={() => setShowCreateGroup(false)}>
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Group name */}
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">Group name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. KNUST Calculus Study Group"
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  maxLength={60}
+                  className="w-full h-10 px-3 rounded-xl bg-navy-50 dark:bg-zinc-800 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-transparent focus:border-primary/30"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">Description</label>
+                <textarea
+                  placeholder="What will you study together?"
+                  value={newGroupDesc}
+                  onChange={(e) => setNewGroupDesc(e.target.value)}
+                  rows={2}
+                  maxLength={200}
+                  className="w-full px-3 py-2.5 rounded-xl bg-navy-50 dark:bg-zinc-800 text-sm outline-none focus:ring-2 focus:ring-primary/30 border border-transparent focus:border-primary/30 resize-none"
+                />
+              </div>
+
+              {/* Members */}
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">
+                  Add members ({newGroupMemberIds.length} selected)
+                </label>
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {Object.values(peerProfiles).map((peer) => {
+                    const checked = newGroupMemberIds.includes(peer.id);
+                    const initials = peer.name.split(" ").map((n) => n[0]).join("").toUpperCase();
+                    return (
+                      <button
+                        key={peer.id}
+                        className={`flex items-center gap-3 w-full p-2.5 rounded-xl transition-colors text-left ${
+                          checked ? "bg-gold-50 dark:bg-gold-500/10 border border-gold-200 dark:border-gold-500/30" : "hover:bg-navy-50 dark:hover:bg-zinc-800"
+                        }`}
+                        onClick={() => {
+                          setNewGroupMemberIds((prev) =>
+                            prev.includes(peer.id) ? prev.filter((id) => id !== peer.id) : [...prev, peer.id]
+                          );
+                        }}
+                      >
+                        <Avatar className="h-8 w-8 shrink-0">
+                          {peer.avatar_url ? (
+                            <img src={peer.avatar_url} alt={peer.name} className="h-full w-full object-cover rounded-full" />
+                          ) : (
+                            <AvatarFallback className="bg-gold-100 text-navy-800 text-xs font-semibold">{initials}</AvatarFallback>
+                          )}
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{peer.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{peer.faculty}</p>
+                        </div>
+                        <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                          checked ? "bg-primary border-primary" : "border-muted-foreground/30"
+                        }`}>
+                          {checked && <span className="text-white text-[10px] font-bold">✓</span>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                  {Object.keys(peerProfiles).length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Start some conversations first to add members
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-4 py-3 border-t shrink-0">
+              <Button
+                className="w-full"
+                disabled={!newGroupName.trim() || newGroupMemberIds.length === 0 || creatingGroup}
+                onClick={handleCreateGroup}
+              >
+                {creatingGroup ? (
+                  <span className="flex items-center gap-2"><span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Creating...</span>
+                ) : (
+                  <span className="flex items-center gap-2"><Users className="h-4 w-4" /> Create group</span>
+                )}
+              </Button>
             </div>
           </div>
         </div>

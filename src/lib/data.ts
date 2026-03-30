@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { Profile, Session, Message, Notification, Badge, Reaction } from "@/lib/types";
+import { Profile, Session, Message, Notification, Badge, Reaction, Group, GroupMember, GroupMessage } from "@/lib/types";
 
 // ─── Profiles ───────────────────────────────────────────────
 
@@ -342,4 +342,95 @@ export function computeBadges(sessions: Session[], userId: string): Badge[] {
   if (learned.length >= 3) badges.push({ id: "learner", name: "Quick Learner", description: "Learned 3+ sessions", icon: "🧠" });
 
   return badges;
+}
+
+// ─── Study Groups ────────────────────────────────────────────
+
+export async function createGroup(
+  name: string,
+  description: string,
+  memberIds: string[],
+  createdBy: string
+): Promise<Group | null> {
+  const { data: group, error } = await supabase
+    .from("groups")
+    .insert({ name, description, created_by: createdBy })
+    .select()
+    .single();
+  if (error || !group) return null;
+
+  const membersToInsert = [
+    { group_id: group.id, user_id: createdBy, role: "admin" },
+    ...memberIds
+      .filter((id) => id !== createdBy)
+      .map((id) => ({ group_id: group.id, user_id: id, role: "member" })),
+  ];
+  await supabase.from("group_members").insert(membersToInsert);
+  return group as Group;
+}
+
+export async function getGroupsForUser(userId: string): Promise<Group[]> {
+  const { data } = await supabase
+    .from("groups")
+    .select("*, group_members!inner(user_id)")
+    .eq("group_members.user_id", userId);
+  return (data as Group[]) || [];
+}
+
+export async function getGroupMessages(groupId: string): Promise<GroupMessage[]> {
+  const { data } = await supabase
+    .from("group_messages")
+    .select("*")
+    .eq("group_id", groupId)
+    .order("created_at", { ascending: true });
+  return (data as GroupMessage[]) || [];
+}
+
+export async function sendGroupMessage(msg: {
+  group_id: string;
+  sender_id: string;
+  content: string;
+  type: GroupMessage["type"];
+  reply_to?: string;
+  reply_preview?: string;
+  reply_sender_id?: string;
+}): Promise<{ data: GroupMessage | null; error: unknown }> {
+  const { data, error } = await supabase
+    .from("group_messages")
+    .insert(msg)
+    .select()
+    .single();
+  return { data: data as GroupMessage | null, error };
+}
+
+export async function getGroupMembers(groupId: string): Promise<GroupMember[]> {
+  const { data } = await supabase
+    .from("group_members")
+    .select("*, profile:profiles(*)")
+    .eq("group_id", groupId);
+  return (data as GroupMember[]) || [];
+}
+
+export async function leaveGroup(groupId: string, userId: string) {
+  return supabase
+    .from("group_members")
+    .delete()
+    .eq("group_id", groupId)
+    .eq("user_id", userId);
+}
+
+export async function editGroupMessage(messageId: string, content: string) {
+  const { error } = await supabase
+    .from("group_messages")
+    .update({ content, edited_at: new Date().toISOString() })
+    .eq("id", messageId);
+  return { error };
+}
+
+export async function deleteGroupMessage(messageId: string) {
+  const { error } = await supabase
+    .from("group_messages")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", messageId);
+  return { error };
 }

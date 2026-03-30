@@ -68,6 +68,40 @@ export interface Reaction {
   created_at: string;
 }
 
+export interface Group {
+  id: string;
+  name: string;
+  description: string;
+  avatar_url: string;
+  created_by: string;
+  created_at: string;
+  member_count?: number;
+}
+
+export interface GroupMember {
+  id: string;
+  group_id: string;
+  user_id: string;
+  role: "admin" | "member";
+  joined_at: string;
+  profile?: Profile;
+}
+
+export interface GroupMessage {
+  id: string;
+  group_id: string;
+  sender_id: string;
+  content: string;
+  type: "text" | "audio" | "image" | "document";
+  reply_to?: string | null;
+  reply_preview?: string | null;
+  reply_sender_id?: string | null;
+  deleted_at?: string | null;
+  edited_at?: string | null;
+  created_at: string;
+  sender?: Profile;
+}
+
 export interface Notification {
   id: string;
   user_id: string;
