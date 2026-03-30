@@ -70,7 +70,7 @@ export default function MatchesPage() {
   if (isLoading || !user) {
     return (
       <div className="min-h-dvh bg-background">
-        <div className="mx-auto max-w-4xl space-y-4 px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-8">
+        <div className="mx-auto max-w-4xl space-y-4 px-4 pt-4 md:pt-8 pb-8">
           <Skeleton className="h-10 w-48" />
           <div className="grid md:grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-40" />)}
@@ -197,7 +197,7 @@ export default function MatchesPage() {
 
   return (
     <div className="min-h-dvh bg-background">
-      <div className="mx-auto px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-8 max-w-4xl">
+      <div className="mx-auto px-4 pt-4 md:pt-8 pb-8 max-w-4xl">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Your Matches</h1>
           {mutual.length > 0 && (

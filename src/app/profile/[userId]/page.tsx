@@ -77,7 +77,7 @@ export default function PublicProfilePage() {
   if (isLoading || loading) {
     return (
       <div className="bg-background min-h-dvh">
-        <div className="container mx-auto max-w-2xl space-y-4 px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-8">
+        <div className="container mx-auto max-w-2xl space-y-4 px-4 pt-4 md:pt-8 pb-8">
           <Skeleton className="h-8 w-24" />
           <Skeleton className="h-48" />
           <div className="grid grid-cols-2 gap-4">
@@ -114,7 +114,7 @@ export default function PublicProfilePage() {
 
   return (
     <div className="bg-background min-h-dvh">
-      <div className="container mx-auto px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-8 max-w-3xl">
+      <div className="container mx-auto px-4 pt-4 md:pt-8 pb-8 max-w-3xl">
         <Button variant="ghost" size="sm" className="mb-4" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Back
         </Button>

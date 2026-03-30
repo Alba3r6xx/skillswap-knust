@@ -79,7 +79,7 @@ export default function DashboardPage() {
   if (isLoading || !user) {
     return (
       <div className="min-h-dvh bg-background">
-        <div className="mx-auto max-w-5xl space-y-5 px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-8">
+        <div className="mx-auto max-w-5xl space-y-5 px-4 pt-4 md:pt-8 pb-8">
           <div className="space-y-1.5">
             <Skeleton className="h-7 w-48" />
             <Skeleton className="h-4 w-32" />
@@ -105,7 +105,7 @@ export default function DashboardPage() {
     <div className="min-h-dvh bg-background">
       <ActivityStream currentUserId={user.id} />
 
-      <div className="mx-auto px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-8 max-w-5xl">
+      <div className="mx-auto px-4 pt-4 md:pt-8 pb-8 max-w-5xl">
 
         {/* Header row */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 content-fade-in">
@@ -394,7 +394,7 @@ export default function DashboardPage() {
                           RARITY_STYLES[b.rarity].border
                         }`}
                       >
-                        {b.name}
+                        <span>{b.icon}</span> {b.name}
                       </div>
                     ))}
                   </div>

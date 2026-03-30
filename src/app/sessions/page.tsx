@@ -71,7 +71,7 @@ export default function SessionsPage() {
   if (isLoading || !user) {
     return (
       <div className="min-h-dvh bg-background">
-        <div className="mx-auto max-w-3xl space-y-4 px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-8">
+        <div className="mx-auto max-w-3xl space-y-4 px-4 pt-4 md:pt-8 pb-8">
           <Skeleton className="h-10 w-48" />
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-32" />)}
         </div>
@@ -164,7 +164,7 @@ export default function SessionsPage() {
                 </Badge>
               </div>
               <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                <span>{new Date(session.date).toLocaleDateString()} at {session.time}</span>
+                <span>📅 {new Date(session.date).toLocaleDateString()} at {session.time}</span>
                 <span className="flex items-center gap-0.5">
                   {session.mode === "online" ? <Monitor className="h-3 w-3" /> : <MapPin className="h-3 w-3" />}
                   {session.mode}
@@ -271,7 +271,7 @@ export default function SessionsPage() {
 
   return (
     <div className="min-h-dvh bg-background">
-      <div className="mx-auto px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-8 max-w-3xl">
+      <div className="mx-auto px-4 pt-4 md:pt-8 pb-8 max-w-3xl">
         <h1 className="text-2xl font-bold mb-6">Sessions</h1>
 
         <Tabs defaultValue="upcoming">
