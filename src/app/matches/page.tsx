@@ -211,9 +211,9 @@ export default function MatchesPage() {
           <EmptyState
             icon={<Users2 />}
             title="No matches yet"
-            description="Add skills you can teach and want to learn — we'll find your perfect skill-swap partners."
-            action={{ label: "Add my skills", href: "/profile" }}
-            secondaryAction={{ label: "Browse all peers", href: "/search" }}
+            description="Tell us what you know and what you're after — your match is in here somewhere."
+            action={{ label: "Update my skills", href: "/profile" }}
+            secondaryAction={{ label: "Browse everyone", href: "/search" }}
           />
         ) : (
           <Tabs defaultValue="all">
@@ -231,7 +231,7 @@ export default function MatchesPage() {
                 <EmptyState
                   icon={<Users2 />}
                   title="No mutual matches yet"
-                  description="Add more skills — mutual matches happen when you and a peer can both teach each other."
+                  description="Mutual means you can both teach each other something. Add more skills to get there."
                   action={{ label: "Add more skills", href: "/profile" }}
                 />
               ) : (
@@ -243,8 +243,8 @@ export default function MatchesPage() {
                 <EmptyState
                   icon={<GraduationCap />}
                   title="No teachers found yet"
-                  description="Add more skills you want to learn and we'll find peers who can teach you."
-                  action={{ label: "Update learning goals", href: "/profile" }}
+                  description="Add more to your learning list and we'll dig deeper."
+                  action={{ label: "Update learning list", href: "/profile" }}
                 />
               ) : (
                 <div className="grid md:grid-cols-2 gap-4">{canTeach.map(renderMatchCard)}</div>
@@ -255,8 +255,8 @@ export default function MatchesPage() {
                 <EmptyState
                   icon={<BookOpen />}
                   title="No learners found yet"
-                  description="Add more skills you can teach — other students are actively searching for them."
-                  action={{ label: "Add teaching skills", href: "/profile" }}
+                  description="Add what you can teach — someone out there is looking for exactly that."
+                  action={{ label: "Add what you teach", href: "/profile" }}
                 />
               ) : (
                 <div className="grid md:grid-cols-2 gap-4">{canLearn.map(renderMatchCard)}</div>

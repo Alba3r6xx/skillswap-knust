@@ -291,9 +291,9 @@ export default function SessionsPage() {
               <EmptyState
                 icon={<Calendar />}
                 title="No upcoming sessions"
-                description="You don't have any confirmed sessions yet. Find a peer and book one!"
-                action={{ label: "Find a peer to book", href: "/search" }}
-                secondaryAction={{ label: "View my matches", href: "/matches" }}
+                description="Nothing locked in. Find someone and set a time."
+                action={{ label: "Find someone", href: "/search" }}
+                secondaryAction={{ label: "Check matches", href: "/matches" }}
               />
             ) : (
               <div className="space-y-3">{accepted.map(renderSession)}</div>
@@ -304,8 +304,8 @@ export default function SessionsPage() {
               <EmptyState
                 icon={<Clock />}
                 title="No pending requests"
-                description="Requests you send or receive will appear here while waiting for acceptance."
-                action={{ label: "Send a session request", href: "/search" }}
+                description="Session requests land here — yours and ones sent to you."
+                action={{ label: "Find someone to ask", href: "/search" }}
               />
             ) : (
               <div className="space-y-3">{pending.map(renderSession)}</div>
@@ -316,8 +316,8 @@ export default function SessionsPage() {
               <EmptyState
                 icon={<CheckCircle2 />}
                 title="No completed sessions yet"
-                description="Book a session, show up, and rate each other — that's all it takes."
-                action={{ label: "Book your first session", href: "/search" }}
+                description="All your completed swaps will live here."
+                action={{ label: "Find someone", href: "/search" }}
               />
             ) : (
               <div className="space-y-3">{completed.map(renderSession)}</div>
@@ -342,7 +342,7 @@ export default function SessionsPage() {
       <Dialog open={showRateDialog} onOpenChange={setShowRateDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rate this session</DialogTitle>
+            <DialogTitle>How’d it go?</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex gap-1 justify-center">
@@ -353,7 +353,7 @@ export default function SessionsPage() {
               ))}
             </div>
             <Textarea
-              placeholder="Leave a comment (optional)"
+              placeholder="Anything to add? (optional)"
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               rows={3}
@@ -362,7 +362,7 @@ export default function SessionsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowRateDialog(false)}>Cancel</Button>
             <Button disabled={rating === 0} onClick={handleRate}>
-              Submit Rating
+              Save rating
             </Button>
           </DialogFooter>
         </DialogContent>
