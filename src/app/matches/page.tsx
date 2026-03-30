@@ -18,6 +18,8 @@ import {
   BookOpen,
   MessageSquare,
   Calendar,
+  Users2,
+  Search,
 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 
@@ -67,8 +69,8 @@ export default function MatchesPage() {
 
   if (isLoading || !user) {
     return (
-      <div className="min-h-dvh bg-background p-4 md:p-6">
-        <div className="mx-auto max-w-4xl space-y-4">
+      <div className="min-h-dvh bg-background">
+        <div className="mx-auto max-w-4xl space-y-4 px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-8">
           <Skeleton className="h-10 w-48" />
           <div className="grid md:grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-40" />)}
@@ -195,7 +197,7 @@ export default function MatchesPage() {
 
   return (
     <div className="min-h-dvh bg-background">
-      <div className="mx-auto px-4 pt-5 pb-8 max-w-4xl">
+      <div className="mx-auto px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-8 max-w-4xl">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Your Matches</h1>
           {mutual.length > 0 && (
@@ -207,7 +209,7 @@ export default function MatchesPage() {
 
         {matches.length === 0 ? (
           <EmptyState
-            icon="🤝"
+            icon={<Users2 />}
             title="No matches yet"
             description="Add skills you can teach and want to learn — we'll find your perfect skill-swap partners."
             action={{ label: "Add my skills", href: "/profile" }}
@@ -217,7 +219,7 @@ export default function MatchesPage() {
           <Tabs defaultValue="all">
             <TabsList className="mb-4">
               <TabsTrigger value="all">All ({matches.length})</TabsTrigger>
-              <TabsTrigger value="mutual">🔥 Mutual ({mutual.length})</TabsTrigger>
+              <TabsTrigger value="mutual">Mutual ({mutual.length})</TabsTrigger>
               <TabsTrigger value="teach">Can Teach You ({canTeach.length})</TabsTrigger>
               <TabsTrigger value="learn">Can Learn ({canLearn.length})</TabsTrigger>
             </TabsList>
@@ -227,7 +229,7 @@ export default function MatchesPage() {
             <TabsContent value="mutual">
               {mutual.length === 0 ? (
                 <EmptyState
-                  icon="🔥"
+                  icon={<Users2 />}
                   title="No mutual matches yet"
                   description="Add more skills — mutual matches happen when you and a peer can both teach each other."
                   action={{ label: "Add more skills", href: "/profile" }}
@@ -239,7 +241,7 @@ export default function MatchesPage() {
             <TabsContent value="teach">
               {canTeach.length === 0 ? (
                 <EmptyState
-                  icon="🎓"
+                  icon={<GraduationCap />}
                   title="No teachers found yet"
                   description="Add more skills you want to learn and we'll find peers who can teach you."
                   action={{ label: "Update learning goals", href: "/profile" }}
@@ -251,7 +253,7 @@ export default function MatchesPage() {
             <TabsContent value="learn">
               {canLearn.length === 0 ? (
                 <EmptyState
-                  icon="📘"
+                  icon={<BookOpen />}
                   title="No learners found yet"
                   description="Add more skills you can teach — other students are actively searching for them."
                   action={{ label: "Add teaching skills", href: "/profile" }}

@@ -96,8 +96,8 @@ export default function ProfilePage() {
 
   if (isLoading || !user) {
     return (
-      <div className="bg-background p-6">
-        <div className="container mx-auto max-w-2xl space-y-4">
+      <div className="bg-background min-h-dvh">
+        <div className="container mx-auto max-w-2xl space-y-4 px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-8">
           <Skeleton className="h-24 w-24 rounded-full mx-auto" />
           <Skeleton className="h-8 w-48 mx-auto" />
           <Skeleton className="h-64" />
@@ -161,8 +161,8 @@ export default function ProfilePage() {
 
   return (
     <div className="bg-background min-h-dvh">
-      <div className="container mx-auto px-4 pt-4 pb-24 max-w-2xl">
-        <h1 className="text-2xl font-black text-navy-900 dark:text-foreground mb-6">Your Profile</h1>
+      <div className="container mx-auto px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-24 max-w-2xl">
+        <h1 className="text-2xl font-bold text-navy-900 dark:text-foreground mb-6">Your Profile</h1>
 
         {/* ── Profile header card ── */}
         <Card className="mb-6">
@@ -174,7 +174,7 @@ export default function ProfilePage() {
                   {user.avatar_url ? (
                     <img src={user.avatar_url} alt={user.name} className="h-full w-full object-cover rounded-full" />
                   ) : (
-                    <AvatarFallback className="bg-gold-100 text-navy-800 text-2xl font-black">
+                    <AvatarFallback className="bg-gold-100 text-navy-800 text-2xl font-bold">
                       {initials}
                     </AvatarFallback>
                   )}
@@ -187,7 +187,7 @@ export default function ProfilePage() {
 
               {/* Name + completeness */}
               <div className="flex-1 min-w-0">
-                <p className="font-black text-navy-900 dark:text-foreground truncate">{user.name || "Your Name"}</p>
+                <p className="font-bold text-navy-900 dark:text-foreground truncate">{user.name || "Your Name"}</p>
                 <p className="text-xs text-muted-foreground truncate mb-2">{user.email}</p>
 
                 {/* Completeness bar */}

@@ -23,6 +23,8 @@ import {
   MapPin,
   FileText,
   Save,
+  Calendar,
+  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
@@ -68,8 +70,8 @@ export default function SessionsPage() {
 
   if (isLoading || !user) {
     return (
-      <div className="min-h-dvh bg-background p-4 md:p-6">
-        <div className="mx-auto max-w-3xl space-y-4">
+      <div className="min-h-dvh bg-background">
+        <div className="mx-auto max-w-3xl space-y-4 px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-8">
           <Skeleton className="h-10 w-48" />
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-32" />)}
         </div>
@@ -269,7 +271,7 @@ export default function SessionsPage() {
 
   return (
     <div className="min-h-dvh bg-background">
-      <div className="mx-auto px-4 pt-5 pb-8 max-w-3xl">
+      <div className="mx-auto px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-8 max-w-3xl">
         <h1 className="text-2xl font-bold mb-6">Sessions</h1>
 
         <Tabs defaultValue="upcoming">
@@ -287,7 +289,7 @@ export default function SessionsPage() {
           <TabsContent value="upcoming">
             {accepted.length === 0 ? (
               <EmptyState
-                icon="📅"
+                icon={<Calendar />}
                 title="No upcoming sessions"
                 description="You don't have any confirmed sessions yet. Find a peer and book one!"
                 action={{ label: "Find a peer to book", href: "/search" }}
@@ -300,7 +302,7 @@ export default function SessionsPage() {
           <TabsContent value="pending">
             {pending.length === 0 ? (
               <EmptyState
-                icon="⏳"
+                icon={<Clock />}
                 title="No pending requests"
                 description="Requests you send or receive will appear here while waiting for acceptance."
                 action={{ label: "Send a session request", href: "/search" }}
@@ -312,9 +314,9 @@ export default function SessionsPage() {
           <TabsContent value="completed">
             {completed.length === 0 ? (
               <EmptyState
-                icon="🏆"
+                icon={<CheckCircle2 />}
                 title="No completed sessions yet"
-                description="Complete your first session to start earning XP, badges, and ratings."
+                description="Book a session, show up, and rate each other — that's all it takes."
                 action={{ label: "Book your first session", href: "/search" }}
               />
             ) : (
@@ -324,7 +326,7 @@ export default function SessionsPage() {
           <TabsContent value="cancelled">
             {cancelled.length === 0 ? (
               <EmptyState
-                icon="✅"
+                icon={<CheckCircle2 />}
                 title="No cancelled sessions"
                 description="Great — all your sessions are on track!"
                 action={{ label: "Book a session", href: "/search" }}

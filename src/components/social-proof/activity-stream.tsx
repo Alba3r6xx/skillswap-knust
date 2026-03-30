@@ -5,10 +5,10 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 const ACTIVITY_MESSAGES = [
-  (skill: string, name: string) => `${name} just booked a ${skill} session 🎯`,
-  (skill: string, name: string) => `${name} accepted a ${skill} swap request ✅`,
-  (skill: string, name: string) => `${name} completed a ${skill} session ⭐`,
-  (skill: string, _name: string) => `Someone new is offering ${skill} lessons 📢`,
+  (skill: string, name: string) => `${name} just booked a ${skill} session`,
+  (skill: string, name: string) => `${name} accepted a ${skill} swap request`,
+  (skill: string, name: string) => `${name} completed a ${skill} session`,
+  (skill: string, _name: string) => `Someone new is offering ${skill} lessons`,
 ];
 
 function formatName(full: string): string {

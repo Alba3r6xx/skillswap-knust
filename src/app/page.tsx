@@ -7,53 +7,60 @@ import { Button } from "@/components/ui/button";
 import {
   Repeat2,
   ArrowRight,
-  GraduationCap,
-  Users,
-  Calendar,
-  Star,
   CheckCircle2,
-  ChevronDown,
   MessageSquare,
-  Zap,
-  Trophy,
-  BookOpen,
-  Code2,
-  Shapes,
-  Languages,
-  FlaskConical,
-  Music,
 } from "lucide-react";
 import Link from "next/link";
-import { AnimatedCounter } from "@/components/animated-counter";
 
 const STEPS = [
   {
     step: "01",
     title: "Create your profile",
     description: "List the skills you can teach — Python, AutoCAD, French, Statistics, anything. Then add what you want to learn.",
-    icon: GraduationCap,
   },
   {
     step: "02",
-    title: "Get matched instantly",
-    description: "Our algorithm pairs you with the best-fit peers from across all KNUST faculties based on skills and availability.",
-    icon: Users,
+    title: "Find a skill match",
+    description: "Browse students across all KNUST faculties. Filter by skill, faculty, and availability to find the right fit.",
   },
   {
     step: "03",
     title: "Book and swap",
-    description: "Schedule an online or in-person session, complete it, rate each other, and earn XP towards your next tier.",
-    icon: Calendar,
+    description: "Schedule an online or in-person session, show up, and rate each other afterward. That's it.",
   },
 ];
 
 const SKILL_CATEGORIES = [
-  { icon: Code2,       label: "Engineering & Tech",   skills: ["Python", "AutoCAD", "MATLAB", "SolidWorks"],  color: "bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-500/10 dark:text-sky-400" },
-  { icon: FlaskConical,label: "Sciences",              skills: ["Organic Chemistry", "Statistics", "Physics"], color: "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400" },
-  { icon: Languages,   label: "Languages",             skills: ["French", "Twi", "Arabic", "Hausa"],           color: "bg-gold-50 text-gold-700 border-gold-100 dark:bg-gold-500/10 dark:text-gold-400" },
-  { icon: Shapes,      label: "Design & Architecture", skills: ["Revit", "SketchUp", "Illustrator", "Figma"], color: "bg-navy-50 text-navy-700 border-navy-100 dark:bg-navy-500/10 dark:text-navy-300" },
-  { icon: BookOpen,    label: "Business & Finance",    skills: ["Accounting", "Excel", "Financial Modelling"], color: "bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-500/10 dark:text-purple-400" },
-  { icon: Music,       label: "Arts & Humanities",     skills: ["Music Theory", "Public Speaking", "Writing"], color: "bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-500/10 dark:text-rose-400" },
+  {
+    label: "Engineering & Tech",
+    skills: ["Python", "AutoCAD", "MATLAB", "SolidWorks"],
+    image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=250&fit=crop",
+  },
+  {
+    label: "Sciences",
+    skills: ["Organic Chemistry", "Statistics", "Physics"],
+    image: "https://images.unsplash.com/photo-1532094349884-543559244b88?w=400&h=250&fit=crop",
+  },
+  {
+    label: "Languages",
+    skills: ["French", "Twi", "Arabic", "Hausa"],
+    image: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&h=250&fit=crop",
+  },
+  {
+    label: "Design & Architecture",
+    skills: ["Revit", "SketchUp", "Illustrator", "Figma"],
+    image: "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=250&fit=crop",
+  },
+  {
+    label: "Business & Finance",
+    skills: ["Accounting", "Excel", "Financial Modelling"],
+    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop",
+  },
+  {
+    label: "Arts & Humanities",
+    skills: ["Music Theory", "Public Speaking", "Writing"],
+    image: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=400&h=250&fit=crop",
+  },
 ];
 
 const TESTIMONIALS = [
@@ -61,21 +68,18 @@ const TESTIMONIALS = [
     name: "Abena Mensah",
     faculty: "Computer Science, L3",
     quote: "I taught Python and learned AutoCAD in exchange. SkillSwap saved me two semesters of struggling with engineering drawings.",
-    rating: 5,
     initials: "AM",
   },
   {
     name: "Kwame Asante",
     faculty: "Civil Engineering, L4",
     quote: "Found a CS student who helped me with MATLAB for my final year project. Returned the favour with structural analysis tutorials.",
-    rating: 5,
     initials: "KA",
   },
   {
     name: "Esi Ofori",
     faculty: "Business Administration, L2",
     quote: "Swapped Accounting lessons for French conversation practice. We meet twice a week — both of us are flying in our courses now.",
-    rating: 5,
     initials: "EO",
   },
 ];
@@ -141,21 +145,9 @@ export default function Home() {
 
       {/* ── SECTION 1: HERO ── */}
       <section className="relative bg-navy-900 text-white overflow-hidden pt-14">
-        {/* Background texture */}
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
-            backgroundSize: "32px 32px",
-          }}
-          aria-hidden
-        />
-        {/* Glow */}
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full opacity-10 blur-3xl pointer-events-none"
-          style={{ background: "oklch(0.769 0.188 70)" }}
-          aria-hidden
-        />
+        <div className="absolute inset-0 bg-gradient-to-br from-navy-900 via-navy-800 to-navy-700" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-sky-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" aria-hidden />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-sky-400/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none" aria-hidden />
 
         <div className="relative mx-auto max-w-4xl px-4 py-24 md:py-32 text-center">
           {/* Badge */}
@@ -164,7 +156,7 @@ export default function Home() {
             Exclusively for KNUST students
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.1] mb-6">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
             Teach what you know.<br />
             <span className="text-primary">Learn what you need.</span>
           </h1>
@@ -202,72 +194,36 @@ export default function Home() {
             ))}
           </div>
         </div>
-
-        {/* Scroll hint */}
-        <div className="flex justify-center pb-8">
-          <ChevronDown className="h-5 w-5 text-navy-600 animate-bounce" aria-hidden />
-        </div>
       </section>
 
-      {/* ── SECTION 2: STATS BAR ── */}
-      <section className="bg-navy-950 border-y border-navy-800 py-8">
-        <div className="mx-auto max-w-4xl px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            {[
-              { value: 1200, suffix: "+", label: "Students registered" },
-              { value: 340, suffix: "+", label: "Skill categories" },
-              { value: 4800, suffix: "+", label: "Sessions completed" },
-              { value: 4.8, suffix: "", label: "Average rating", decimals: 1 },
-            ].map(({ value, suffix, label, decimals }) => (
-              <div key={label}>
-                <p className="text-3xl font-black text-white font-display">
-                  <AnimatedCounter value={value} suffix={suffix} decimals={decimals} />
-                </p>
-                <p className="text-xs text-navy-400 mt-1">{label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── SECTION 3: HOW IT WORKS ── */}
+      {/* ── SECTION 2: HOW IT WORKS ── */}
       <section className="py-20 bg-background">
         <div className="mx-auto max-w-5xl px-4">
           <div className="text-center mb-14">
-            <p className="text-xs font-semibold text-primary tracking-widest uppercase mb-3">How it works</p>
-            <h2 className="text-3xl md:text-4xl font-black text-navy-900 dark:text-foreground tracking-tight">
+            <h2 className="text-3xl md:text-4xl font-bold text-navy-900 dark:text-foreground tracking-tight">
               Three steps to your first swap
             </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {STEPS.map(({ step, title, description, icon: Icon }) => (
-              <div key={step} className="relative group">
-                <div className="flex items-start gap-4">
-                  <div className="shrink-0">
-                    <div className="w-12 h-12 rounded-2xl bg-navy-900 flex items-center justify-center text-primary
-                      group-hover:bg-primary group-hover:text-white transition-colors duration-200">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-[11px] font-mono font-bold text-muted-foreground/60 tracking-widest">{step}</span>
-                    <h3 className="text-base font-bold text-navy-900 dark:text-foreground mt-0.5 mb-2">{title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
-                  </div>
+            {STEPS.map(({ step, title, description }) => (
+              <div key={step} className="text-center">
+                <div className="w-14 h-14 bg-sky-100 dark:bg-sky-500/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-lg font-bold text-navy-800 dark:text-sky-400">{step}</span>
                 </div>
+                <h3 className="text-base font-semibold text-navy-900 dark:text-foreground mb-2">{title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── SECTION 4: SKILL CATEGORIES ── */}
+      {/* ── SECTION 3: SKILL CATEGORIES ── */}
       <section className="py-20 bg-navy-50 dark:bg-navy-950/50">
         <div className="mx-auto max-w-5xl px-4">
-          <div className="text-center mb-14">
-            <p className="text-xs font-semibold text-primary tracking-widest uppercase mb-3">What you can swap</p>
-            <h2 className="text-3xl md:text-4xl font-black text-navy-900 dark:text-foreground tracking-tight">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-navy-900 dark:text-foreground tracking-tight">
               Skills across every faculty
             </h2>
             <p className="text-muted-foreground text-sm mt-3 max-w-lg mx-auto">
@@ -275,103 +231,120 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {SKILL_CATEGORIES.map(({ icon: Icon, label, skills, color }) => (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {SKILL_CATEGORIES.map(({ label, skills, image }) => (
               <div
                 key={label}
-                className={`rounded-xl border p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md ${color}`}
+                className="bg-white dark:bg-card rounded-2xl overflow-hidden border border-gray-200 dark:border-border hover:shadow-lg transition-shadow group"
               >
-                <Icon className="h-6 w-6 mb-3 opacity-80" />
-                <h3 className="font-bold text-sm mb-2">{label}</h3>
-                <div className="flex flex-wrap gap-1">
-                  {skills.map((s) => (
-                    <span key={s} className="text-[11px] bg-white/60 dark:bg-white/10 rounded px-1.5 py-0.5 font-medium">
-                      {s}
-                    </span>
-                  ))}
-                  <span className="text-[11px] opacity-60 self-center">+ more</span>
+                <div className="relative h-44 overflow-hidden">
+                  <img
+                    src={image}
+                    alt={label}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <span className="absolute top-3 left-3 px-3 py-1 bg-navy-900/80 backdrop-blur-sm text-white text-xs font-semibold rounded-full">
+                    {label}
+                  </span>
+                </div>
+                <div className="p-4">
+                  <div className="flex flex-wrap gap-1.5">
+                    {skills.map((s) => (
+                      <span
+                        key={s}
+                        className="text-xs bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-100 dark:border-sky-500/20 rounded px-2 py-0.5 font-medium"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                    <span className="text-xs text-muted-foreground/60 self-center">+ more</span>
+                  </div>
+                  <Link
+                    href="/register"
+                    className="mt-4 block w-full text-center py-2.5 rounded-lg bg-navy-800 dark:bg-navy-700 text-white text-sm font-semibold hover:bg-navy-700 dark:hover:bg-navy-600 transition-colors"
+                  >
+                    Find a swap partner
+                  </Link>
                 </div>
               </div>
             ))}
           </div>
+
+          <div className="text-center mt-10">
+            <Link
+              href="/register"
+              className="inline-flex items-center px-6 py-3 rounded-full border-2 border-navy-800 dark:border-navy-600 text-navy-800 dark:text-navy-200 font-semibold text-sm hover:bg-navy-800 hover:text-white dark:hover:bg-navy-700 transition-colors"
+            >
+              See all skills on the platform →
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* ── SECTION 5: TESTIMONIALS ── */}
+      {/* ── SECTION 4: TESTIMONIALS ── */}
       <section className="py-20 bg-background">
         <div className="mx-auto max-w-5xl px-4">
-          <div className="text-center mb-14">
-            <p className="text-xs font-semibold text-primary tracking-widest uppercase mb-3">Student stories</p>
-            <h2 className="text-3xl md:text-4xl font-black text-navy-900 dark:text-foreground tracking-tight">
-              Real swaps. Real growth.
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-navy-900 dark:text-foreground tracking-tight">
+              What students say
             </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {TESTIMONIALS.map(({ name, faculty, quote, rating, initials }) => (
+            {TESTIMONIALS.map(({ name, faculty, quote, initials }) => (
               <div
                 key={name}
-                className="rounded-xl border bg-card p-6
-                  shadow-[0_1px_3px_oklch(0_0_0/0.07)]
-                  hover:shadow-[0_4px_16px_oklch(0_0_0/0.08)]
-                  hover:-translate-y-0.5 transition-all duration-150"
+                className="bg-gray-50 dark:bg-card rounded-2xl p-6 border border-gray-200 dark:border-border"
               >
-                <div className="flex gap-0.5 mb-4">
-                  {Array.from({ length: rating }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 text-gold-500 fill-gold-500" />
-                  ))}
-                </div>
-                <p className="text-sm text-foreground leading-relaxed mb-5">&ldquo;{quote}&rdquo;</p>
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-navy-900 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-sky-500 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0">
                     {initials}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold">{name}</p>
+                    <p className="font-semibold text-navy-900 dark:text-foreground text-sm">{name}</p>
                     <p className="text-xs text-muted-foreground">{faculty}</p>
                   </div>
                 </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">&ldquo;{quote}&rdquo;</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── SECTION 6: FAQ ── */}
+      {/* ── SECTION 5: FAQ ── */}
       <section className="py-20 bg-navy-50 dark:bg-navy-950/50">
         <div className="mx-auto max-w-3xl px-4">
-          <div className="text-center mb-14">
-            <p className="text-xs font-semibold text-primary tracking-widest uppercase mb-3">FAQ</p>
-            <h2 className="text-3xl md:text-4xl font-black text-navy-900 dark:text-foreground tracking-tight">
-              Questions you&apos;re probably thinking
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-navy-900 dark:text-foreground tracking-tight">
+              Common questions
             </h2>
           </div>
 
           <div className="space-y-4">
-            {FAQS.map(({ q, a }) => (
+            {FAQS.map(({ q, a }, i) => (
               <div key={q} className="rounded-xl border bg-card p-5">
                 <p className="font-semibold text-sm text-navy-900 dark:text-foreground mb-2 flex items-start gap-2">
-                  <Zap className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <span className="shrink-0 w-5 h-5 rounded-full bg-navy-100 dark:bg-navy-800 text-navy-600 dark:text-navy-300 text-xs font-bold flex items-center justify-center mt-0.5">
+                    {i + 1}
+                  </span>
                   {q}
                 </p>
-                <p className="text-sm text-muted-foreground leading-relaxed pl-6">{a}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed pl-7">{a}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── SECTION 7: FINAL CTA ── */}
+      {/* ── SECTION 6: FINAL CTA ── */}
       <section className="py-24 bg-navy-900 text-white">
         <div className="mx-auto max-w-3xl px-4 text-center">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <Trophy className="h-8 w-8 text-primary" />
-          </div>
-          <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-4">
-            Your next skill is one<br />swap away
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
+            Ready to learn something new?
           </h2>
           <p className="text-navy-300 text-base mb-10 max-w-md mx-auto leading-relaxed">
-            Join over 1,200 KNUST students already teaching and learning from each other.
+            Join KNUST students already teaching and learning from each other.
             No cost. No commitment. Just knowledge.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">

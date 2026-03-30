@@ -4,7 +4,7 @@ import { useSidebar } from "@/lib/sidebar-context";
 import { useAuth } from "@/lib/auth-context";
 import { usePathname } from "next/navigation";
 
-const PUBLIC_PATHS = ["/", "/login", "/register"];
+const PUBLIC_PATHS = ["/", "/login", "/register", "/onboarding"];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { collapsed } = useSidebar();

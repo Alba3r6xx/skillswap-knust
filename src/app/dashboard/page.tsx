@@ -20,8 +20,10 @@ import {
   TrendingUp,
   MessageSquare,
   ArrowRight,
-  Zap,
   Bell,
+  Award,
+  Search,
+  Pencil,
 } from "lucide-react";
 import { XPBar } from "@/components/gamification/xp-bar";
 import { StreakCard } from "@/components/gamification/streak-card";
@@ -76,8 +78,8 @@ export default function DashboardPage() {
 
   if (isLoading || !user) {
     return (
-      <div className="min-h-dvh bg-background p-4 md:p-6">
-        <div className="mx-auto max-w-5xl space-y-5">
+      <div className="min-h-dvh bg-background">
+        <div className="mx-auto max-w-5xl space-y-5 px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-8">
           <div className="space-y-1.5">
             <Skeleton className="h-7 w-48" />
             <Skeleton className="h-4 w-32" />
@@ -103,7 +105,7 @@ export default function DashboardPage() {
     <div className="min-h-dvh bg-background">
       <ActivityStream currentUserId={user.id} />
 
-      <div className="mx-auto px-4 pt-5 pb-8 max-w-5xl">
+      <div className="mx-auto px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-8 max-w-5xl">
 
         {/* Header row */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 content-fade-in">
@@ -250,7 +252,7 @@ export default function DashboardPage() {
               <CardContent>
                 {upcoming.length === 0 ? (
                   <EmptyState
-                    icon="📅"
+                    icon={<Calendar />}
                     title="No upcoming sessions"
                     description="Book a session with a peer to start exchanging skills."
                     action={{ label: "Find a peer", href: "/search" }}
@@ -294,9 +296,9 @@ export default function DashboardPage() {
               <CardContent>
                 {topMatches.length === 0 ? (
                   <EmptyState
-                    icon="🔍"
+                    icon={<Search />}
                     title="No matches yet"
-                    description="Add skills to teach and learn to unlock peer matches."
+                    description="Add skills to teach and learn to find peer matches."
                     action={{ label: "Complete your profile", href: "/profile" }}
                   />
                 ) : (
@@ -374,7 +376,7 @@ export default function DashboardPage() {
               <CardContent>
                 {achievements.length === 0 ? (
                   <EmptyState
-                    icon="🏅"
+                    icon={<Award />}
                     title="No badges yet"
                     description="Complete your first session to earn your first badge."
                     action={{ label: "Find a peer", href: "/search" }}
@@ -392,7 +394,6 @@ export default function DashboardPage() {
                           RARITY_STYLES[b.rarity].border
                         }`}
                       >
-                        <span className="text-sm">{b.icon}</span>
                         {b.name}
                       </div>
                     ))}
@@ -422,7 +423,7 @@ export default function DashboardPage() {
                 </Link>
                 <Link href="/profile" className="block">
                   <Button variant="outline" className="w-full justify-start gap-2 text-sm rounded-lg">
-                    <Zap className="h-4 w-4 text-primary" /> Edit Profile
+                    <Pencil className="h-4 w-4" /> Edit Profile
                     {profileScore < 100 && (
                       <span className="ml-auto text-xs text-gold-600 font-semibold">{profileScore}%</span>
                     )}

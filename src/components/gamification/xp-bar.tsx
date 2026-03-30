@@ -17,7 +17,7 @@ export function XPBar({ xp, compact = false, className }: XPBarProps) {
   if (compact) {
     return (
       <div className={cn("flex items-center gap-2", className)}>
-        <span className="text-base leading-none">{tier.icon}</span>
+        <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", tier.bg)} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-0.5">
             <span className={cn("text-xs font-semibold", tier.color)}>{tier.name}</span>
@@ -37,8 +37,8 @@ export function XPBar({ xp, compact = false, className }: XPBarProps) {
   return (
     <div className={cn("rounded-xl border bg-card p-4", className)}>
       <div className="flex items-center gap-3 mb-3">
-        <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center text-xl", tier.bg)}>
-          {tier.icon}
+        <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center", tier.bg)}>
+          <span className={cn("text-xs font-bold", tier.color)}>{tier.name[0]}</span>
         </div>
         <div>
           <p className={cn("font-semibold text-sm", tier.color)}>{tier.name}</p>
@@ -47,7 +47,7 @@ export function XPBar({ xp, compact = false, className }: XPBarProps) {
         {next && (
           <div className="ml-auto text-right">
             <p className="text-xs text-muted-foreground">{next - xp} XP to next</p>
-            <p className="text-xs font-medium text-gold-600">level up</p>
+            <p className="text-xs font-medium text-gold-600">{getXPTier(next).name}</p>
           </div>
         )}
       </div>

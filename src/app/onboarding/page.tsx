@@ -19,7 +19,7 @@ import {
   Sparkles,
   X,
   Plus,
-  Zap,
+  Repeat2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -135,7 +135,7 @@ export default function OnboardingPage() {
   };
 
   const handleFinish = () => {
-    toast.success("You're ready to swap skills! 🎉");
+    toast.success("You're ready to swap skills!");
     router.push("/dashboard");
   };
 
@@ -156,7 +156,7 @@ export default function OnboardingPage() {
       <div className="w-full bg-white dark:bg-card border-b px-4 py-3 flex items-center gap-4">
         <div className="flex items-center gap-2">
           <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-            <Zap className="h-4 w-4 text-white" />
+            <Repeat2 className="h-4 w-4 text-white" />
           </div>
           <span className="font-bold text-sm">SkillSwap</span>
         </div>
@@ -206,24 +206,28 @@ export default function OnboardingPage() {
           {/* ── STEP 1: Welcome ── */}
           {step === 1 && (
             <div className="text-center space-y-6">
-              <div className="text-6xl">👋</div>
+              <div className="w-16 h-16 rounded-2xl bg-navy-900 flex items-center justify-center mx-auto">
+                <Repeat2 className="h-8 w-8 text-white" />
+              </div>
               <div>
                 <h1 className="text-3xl font-bold mb-2">Welcome, {firstName}!</h1>
                 <p className="text-muted-foreground text-base leading-relaxed">
-                  You're joining <strong>{Math.floor(Math.random() * 300) + 700}+ KNUST students</strong> already
-                  trading skills. Let's set you up in under 60 seconds.
+                  You're joining KNUST students already trading skills.
+                  Let's set you up in under 60 seconds.
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-4 my-8">
                 {[
-                  { icon: "🎓", label: "Teach skills", sub: "Share what you know" },
-                  { icon: "📘", label: "Learn skills", sub: "Find expert peers" },
-                  { icon: "🤝", label: "Book sessions", sub: "Schedule instantly" },
-                ].map((item) => (
-                  <div key={item.label} className="rounded-xl bg-white dark:bg-card border p-4 text-center shadow-sm">
-                    <div className="text-3xl mb-2">{item.icon}</div>
-                    <p className="text-xs font-semibold">{item.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{item.sub}</p>
+                  { Icon: GraduationCap, label: "Teach skills", sub: "Share what you know" },
+                  { Icon: BookOpen, label: "Learn skills", sub: "Find expert peers" },
+                  { Icon: Calendar, label: "Book sessions", sub: "Schedule instantly" },
+                ].map(({ Icon, label, sub }) => (
+                  <div key={label} className="rounded-xl bg-white dark:bg-card border p-4 text-center shadow-sm">
+                    <div className="w-10 h-10 rounded-xl bg-navy-50 dark:bg-navy-900/50 flex items-center justify-center mx-auto mb-2">
+                      <Icon className="h-5 w-5 text-navy-600 dark:text-navy-300" />
+                    </div>
+                    <p className="text-xs font-semibold">{label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
                   </div>
                 ))}
               </div>
@@ -440,7 +444,7 @@ export default function OnboardingPage() {
                           : "bg-background dark:bg-card border-border text-muted-foreground hover:border-primary/40"
                       )}
                     >
-                      {mode === "online" ? "💻 Online" : mode === "offline" ? "📍 In Person" : "🔄 Both"}
+                      {mode === "online" ? "Online" : mode === "offline" ? "In Person" : "Both"}
                     </button>
                   ))}
                 </div>
@@ -464,7 +468,11 @@ export default function OnboardingPage() {
           {/* ── STEP 5: Done ── */}
           {step === 5 && (
             <div className="text-center space-y-6">
-              <div className="text-6xl animate-bounce">🎉</div>
+              <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center mx-auto">
+                <svg className="h-8 w-8 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
               <div>
                 <h1 className="text-3xl font-bold mb-2">You're all set, {firstName}!</h1>
                 <p className="text-muted-foreground">
@@ -487,7 +495,7 @@ export default function OnboardingPage() {
                   <span>{availability.length > 0 ? `${availability.length} days available` : "Availability not set"}</span>
                 </div>
                 <div className="mt-3 pt-3 border-t">
-                  <p className="text-xs text-muted-foreground">You earned <strong className="text-primary">+100 XP</strong> for completing setup! 🚀</p>
+                  <p className="text-xs text-muted-foreground">Your profile is live — peers can now find and book you.</p>
                 </div>
               </div>
 

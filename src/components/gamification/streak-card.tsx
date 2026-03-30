@@ -45,7 +45,7 @@ export function StreakCard({ streak, compact = false, className }: StreakCardPro
         <p className="font-bold text-lg leading-none">{streak}</p>
         <p className="text-xs text-muted-foreground mt-0.5">Week swap streak</p>
         {streak >= 3 && (
-          <p className="text-xs font-medium text-orange-500 mt-0.5">🔥 On fire!</p>
+          <p className="text-xs font-medium text-orange-500 mt-0.5">Going strong</p>
         )}
         {streak === 0 && (
           <p className="text-xs text-muted-foreground">Complete a session this week</p>

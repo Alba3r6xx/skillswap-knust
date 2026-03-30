@@ -11,9 +11,9 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 const RANK_STYLES = [
-  { medal: "🥇", bg: "bg-gold-50 dark:bg-gold-500/10 border-gold-200 dark:border-gold-500/30" },
-  { medal: "🥈", bg: "bg-slate-50 dark:bg-slate-500/10 border-slate-200 dark:border-slate-500/30" },
-  { medal: "🥉", bg: "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30" },
+  { rankColor: "bg-gold-500 text-white",   bg: "bg-gold-50 dark:bg-gold-500/10 border-gold-200 dark:border-gold-500/30" },
+  { rankColor: "bg-slate-400 text-white",  bg: "bg-slate-50 dark:bg-slate-500/10 border-slate-200 dark:border-slate-500/30" },
+  { rankColor: "bg-amber-600 text-white",  bg: "bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30" },
 ];
 
 interface LeaderboardProps {
@@ -71,11 +71,9 @@ export function Leaderboard({ currentUserId, limit = 5, className }: Leaderboard
                   {/* Rank */}
                   <div className={cn(
                     "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                    i < 3
-                      ? RANK_STYLES[i].bg + " border"
-                      : "bg-muted text-muted-foreground"
+                    i < 3 ? RANK_STYLES[i].rankColor : "bg-muted text-muted-foreground"
                   )}>
-                    {i < 3 ? RANK_STYLES[i].medal : i + 1}
+                    {i + 1}
                   </div>
 
                   {/* Avatar */}
@@ -98,7 +96,7 @@ export function Leaderboard({ currentUserId, limit = 5, className }: Leaderboard
                   {/* XP + tier */}
                   <div className="text-right shrink-0">
                     <p className="text-xs font-semibold text-gold-600">{(user.xp || 0).toLocaleString()} XP</p>
-                    <p className={cn("text-xs", tier.color)}>{tier.icon} {tier.name}</p>
+                    <p className={cn("text-xs", tier.color)}>{tier.name}</p>
                   </div>
                 </Link>
               );

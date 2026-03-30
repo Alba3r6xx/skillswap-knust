@@ -10,7 +10,7 @@ interface EmptyStateAction {
 }
 
 interface EmptyStateProps {
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   description: string;
   action?: EmptyStateAction;
@@ -54,7 +54,9 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className={cn("flex flex-col items-center justify-center py-16 px-4 text-center", className)}>
-      <div className="mb-4 text-5xl leading-none select-none">{icon}</div>
+      <div className="mb-4 w-14 h-14 rounded-2xl bg-navy-50 dark:bg-navy-900/50 flex items-center justify-center text-navy-400 dark:text-navy-500 [&_svg]:h-7 [&_svg]:w-7">
+        {icon}
+      </div>
       <h3 className="text-lg font-semibold mb-2 text-foreground">{title}</h3>
       <p className="text-sm text-muted-foreground max-w-xs leading-relaxed mb-6">{description}</p>
       {(action || secondaryAction) && (

@@ -37,7 +37,7 @@ const NAV_ITEMS = [
   { href: "/profile", label: "Profile", icon: UserCircle },
 ];
 
-const PUBLIC_PATHS = ["/", "/login", "/register"];
+const PUBLIC_PATHS = ["/", "/login", "/register", "/onboarding"];
 
 export default function Navbar() {
   const { user, signOut } = useAuth();

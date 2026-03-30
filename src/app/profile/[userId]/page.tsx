@@ -76,8 +76,8 @@ export default function PublicProfilePage() {
 
   if (isLoading || loading) {
     return (
-      <div className="bg-background p-6">
-        <div className="container mx-auto max-w-2xl space-y-4">
+      <div className="bg-background min-h-dvh">
+        <div className="container mx-auto max-w-2xl space-y-4 px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-8">
           <Skeleton className="h-8 w-24" />
           <Skeleton className="h-48" />
           <div className="grid grid-cols-2 gap-4">
@@ -114,7 +114,7 @@ export default function PublicProfilePage() {
 
   return (
     <div className="bg-background min-h-dvh">
-      <div className="container mx-auto px-4 py-6 max-w-3xl">
+      <div className="container mx-auto px-4 pt-[calc(3rem+env(safe-area-inset-top)+1rem)] md:pt-8 pb-8 max-w-3xl">
         <Button variant="ghost" size="sm" className="mb-4" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Back
         </Button>
@@ -130,17 +130,17 @@ export default function PublicProfilePage() {
           </div>
           {availableSlots <= 2 && availableSlots > 0 && (
             <span className="text-xs font-semibold text-red-600 bg-red-50 dark:bg-red-500/10 px-2 py-0.5 rounded-full">
-              ⚠️ Only {availableSlots} slot{availableSlots > 1 ? "s" : ""} left this week
+              Only {availableSlots} slot{availableSlots > 1 ? "s" : ""} left this week
             </span>
           )}
           {availableSlots === 0 && (
             <span className="text-xs font-semibold text-red-600 bg-red-50 dark:bg-red-500/10 px-2 py-0.5 rounded-full">
-              🔴 Fully booked this week
+              Fully booked this week
             </span>
           )}
           {skillDemand >= 8 && topSkill && (
             <span className="text-xs font-semibold text-gold-700 bg-gold-50 dark:bg-gold-500/10 px-2 py-0.5 rounded-full">
-              🔥 {topSkill.name} requested {skillDemand}× this week
+              {topSkill.name} requested {skillDemand}× this week
             </span>
           )}
         </div>
@@ -154,7 +154,7 @@ export default function PublicProfilePage() {
                   {profileUser.avatar_url ? (
                     <img src={profileUser.avatar_url} alt={profileUser.name} className="h-full w-full object-cover rounded-full" />
                   ) : (
-                    <AvatarFallback className="bg-gold-100 text-navy-800 text-2xl font-black">
+                    <AvatarFallback className="bg-gold-100 text-navy-800 text-2xl font-bold">
                       {initials}
                     </AvatarFallback>
                   )}
