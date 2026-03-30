@@ -12,18 +12,11 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  GraduationCap,
-  BookOpen,
   Calendar,
-  Users,
-  Star,
-  TrendingUp,
-  MessageSquare,
   ArrowRight,
   Bell,
   Award,
   Search,
-  Pencil,
 } from "lucide-react";
 import { XPBar } from "@/components/gamification/xp-bar";
 import { StreakCard } from "@/components/gamification/streak-card";
@@ -111,7 +104,7 @@ export default function DashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 content-fade-in">
           <div>
             <h1 className="text-2xl font-bold text-navy-900 dark:text-foreground">
-              Welcome back, {user.name.split(" ")[0]}
+              Hey, {user.name.split(" ")[0]} 👋
             </h1>
             <OnlineCount variant="inline" className="mt-1" />
           </div>
@@ -132,9 +125,9 @@ export default function DashboardPage() {
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="h-4 w-4 text-gold-600" />
+                  <span className="text-sm select-none">📊</span>
                   <p className="text-sm font-semibold text-navy-800 dark:text-gold-300">
-                    Profile {profileScore}% complete — finish it for better matches
+                    You're {profileScore}% there — a fuller profile gets you better matches
                   </p>
                 </div>
                 <div className="h-1.5 rounded-full bg-gold-200 dark:bg-gold-500/30 mb-2 overflow-hidden">
@@ -154,7 +147,7 @@ export default function DashboardPage() {
               </div>
               <Link href="/profile">
                 <Button size="sm" className="shrink-0">
-                  Complete
+                  Finish up
                 </Button>
               </Link>
             </div>
@@ -162,67 +155,43 @@ export default function DashboardPage() {
         )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 stagger-children">
-          <Card className="group">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 flex items-center justify-center shrink-0">
-                  <GraduationCap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-2xl font-bold font-display text-navy-900 dark:text-foreground">
-                    <AnimatedCounter value={user.skills_to_teach.length} />
-                  </p>
-                  <p className="text-xs text-muted-foreground">Teaching</p>
-                </div>
-              </div>
+              <p className="text-2xl mb-1.5 select-none">🎓</p>
+              <p className="text-2xl font-bold font-display text-navy-900 dark:text-foreground leading-none">
+                <AnimatedCounter value={user.skills_to_teach.length} />
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Teaching</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-sky-50 dark:bg-sky-500/15 flex items-center justify-center shrink-0">
-                  <BookOpen className="h-5 w-5 text-sky-600 dark:text-sky-400" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-2xl font-bold font-display text-navy-900 dark:text-foreground">
-                    <AnimatedCounter value={user.skills_to_learn.length} />
-                  </p>
-                  <p className="text-xs text-muted-foreground">Learning</p>
-                </div>
-              </div>
+              <p className="text-2xl mb-1.5 select-none">📖</p>
+              <p className="text-2xl font-bold font-display text-navy-900 dark:text-foreground leading-none">
+                <AnimatedCounter value={user.skills_to_learn.length} />
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Learning</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-gold-50 dark:bg-gold-500/15 flex items-center justify-center shrink-0">
-                  <Calendar className="h-5 w-5 text-gold-600 dark:text-gold-400" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-2xl font-bold font-display text-navy-900 dark:text-foreground">
-                    <AnimatedCounter value={completed.length} />
-                  </p>
-                  <p className="text-xs text-muted-foreground">Sessions</p>
-                </div>
-              </div>
+              <p className="text-2xl mb-1.5 select-none">📅</p>
+              <p className="text-2xl font-bold font-display text-navy-900 dark:text-foreground leading-none">
+                <AnimatedCounter value={completed.length} />
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Swaps done</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-navy-50 dark:bg-navy-500/15 flex items-center justify-center shrink-0">
-                  <Star className="h-5 w-5 text-navy-600 dark:text-navy-300" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-2xl font-bold font-display text-navy-900 dark:text-foreground">
-                    {user.rating > 0 ? (
-                      <AnimatedCounter value={user.rating} decimals={1} />
-                    ) : "—"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Rating</p>
-                </div>
-              </div>
+              <p className="text-2xl mb-1.5 select-none">⭐</p>
+              <p className="text-2xl font-bold font-display text-navy-900 dark:text-foreground leading-none">
+                {user.rating > 0 ? (
+                  <AnimatedCounter value={user.rating} decimals={1} />
+                ) : "—"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Your rating</p>
             </CardContent>
           </Card>
         </div>
@@ -254,7 +223,7 @@ export default function DashboardPage() {
                   <EmptyState
                     icon={<Calendar />}
                     title="No upcoming sessions"
-                    description="Book a session with a peer to start exchanging skills."
+                    description="Nothing locked in yet. Find someone and get a swap going."
                     action={{ label: "Find a peer", href: "/search" }}
                     secondaryAction={{ label: "View matches", href: "/matches" }}
                   />
@@ -298,7 +267,7 @@ export default function DashboardPage() {
                   <EmptyState
                     icon={<Search />}
                     title="No matches yet"
-                    description="Add skills to teach and learn to find peer matches."
+                    description="Add what you teach and want to learn — we'll find your people."
                     action={{ label: "Complete your profile", href: "/profile" }}
                   />
                 ) : (
@@ -326,7 +295,7 @@ export default function DashboardPage() {
                           </div>
                           {peer.rating > 0 && (
                             <div className="flex items-center gap-1 text-xs">
-                              <Star className="h-3 w-3 text-gold-500 fill-gold-500" />
+                              <span className="text-xs select-none">⭐</span>
                               {peer.rating.toFixed(1)}
                             </div>
                           )}
@@ -350,12 +319,10 @@ export default function DashboardPage() {
               <Card className="border-sky-200 dark:border-sky-500/30">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-sky-50 dark:bg-sky-500/15 flex items-center justify-center shrink-0">
-                      <MessageSquare className="h-5 w-5 text-sky-600 dark:text-sky-400" />
-                    </div>
+                    <div className="text-2xl select-none leading-none">💬</div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold">{unreadCount} unread</p>
-                      <p className="text-xs text-muted-foreground">Don&apos;t leave them waiting</p>
+                      <p className="text-xs text-muted-foreground">Don&apos;t leave them on read</p>
                     </div>
                     <Link href="/messages">
                       <Button size="sm" variant="navy">Reply</Button>
@@ -378,7 +345,7 @@ export default function DashboardPage() {
                   <EmptyState
                     icon={<Award />}
                     title="No badges yet"
-                    description="Complete your first session to earn your first badge."
+                    description="Finish a session and your first badge drops right here."
                     action={{ label: "Find a peer", href: "/search" }}
                     className="py-8"
                   />
@@ -405,17 +372,17 @@ export default function DashboardPage() {
             {/* Quick Actions */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Quick Actions</CardTitle>
+                <CardTitle className="text-base">Shortcuts</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <Link href="/search" className="block">
                   <Button variant="outline" className="w-full justify-start gap-2 text-sm rounded-lg">
-                    <Users className="h-4 w-4" /> Find Peers
+                    <span className="text-base select-none">👥</span> Find Peers
                   </Button>
                 </Link>
                 <Link href="/messages" className="block">
                   <Button variant="outline" className="w-full justify-start gap-2 text-sm rounded-lg">
-                    <MessageSquare className="h-4 w-4" /> Messages
+                    <span className="text-base select-none">💬</span> Messages
                     {unreadCount > 0 && (
                       <span className="ml-auto text-xs bg-sky-500 text-white rounded-full px-1.5 py-0.5 font-semibold">{unreadCount}</span>
                     )}
@@ -423,7 +390,7 @@ export default function DashboardPage() {
                 </Link>
                 <Link href="/profile" className="block">
                   <Button variant="outline" className="w-full justify-start gap-2 text-sm rounded-lg">
-                    <Pencil className="h-4 w-4" /> Edit Profile
+                    <span className="text-base select-none">✏️</span> Edit Profile
                     {profileScore < 100 && (
                       <span className="ml-auto text-xs text-gold-600 font-semibold">{profileScore}%</span>
                     )}

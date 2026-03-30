@@ -2,7 +2,7 @@
   "name": "SkillSwap KNUST",
   "short_name": "SkillSwap",
   "description": "Peer-to-peer skill exchange platform for KNUST students",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#f59e0b",

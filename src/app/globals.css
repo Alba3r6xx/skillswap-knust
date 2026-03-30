@@ -265,6 +265,12 @@
     scroll-behavior: smooth;
     /* Reserve bottom nav space on mobile */
     scroll-padding-bottom: 4rem;
+    overflow-x: hidden;
+    scrollbar-width: none; /* Firefox */
+  }
+
+  html::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
   }
 
   body {
