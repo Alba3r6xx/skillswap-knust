@@ -3,103 +3,105 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { Button } from "@/components/ui/button";
-import {
-  Repeat2,
-  ArrowRight,
-  CheckCircle2,
-  MessageSquare,
-} from "lucide-react";
 import Link from "next/link";
+import { Repeat2 } from "lucide-react";
 
-const STEPS = [
+const HOW_IT_WORKS = [
   {
-    step: "01",
-    title: "Create your profile",
-    description: "List the skills you can teach — Python, AutoCAD, French, Statistics, anything. Then add what you want to learn.",
+    step: "1",
+    title: "Create Your Profile",
+    desc: "Sign up with your KNUST email. List the skills you can teach — and the ones you want to learn.",
+    icon: (
+      <svg className="w-6 h-6 text-navy-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+    ),
   },
   {
-    step: "02",
-    title: "Find a skill match",
-    description: "Browse students across all KNUST faculties. Filter by skill, faculty, and availability to find the right fit.",
+    step: "2",
+    title: "Find a Skill Match",
+    desc: "Browse students across every KNUST faculty. Filter by skill, mode, and availability to find your match.",
+    icon: (
+      <svg className="w-6 h-6 text-navy-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+    ),
   },
   {
-    step: "03",
-    title: "Book and swap",
-    description: "Schedule an online or in-person session, show up, and rate each other afterward. That's it.",
+    step: "3",
+    title: "Book & Start Swapping",
+    desc: "Schedule a session online or on campus. Show up, teach, learn, and rate each other afterward.",
+    icon: (
+      <svg className="w-6 h-6 text-navy-800" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+      </svg>
+    ),
   },
 ];
 
-const SKILL_CATEGORIES = [
+const FEATURED_SKILLS = [
   {
-    label: "Engineering & Tech",
-    skills: ["Python", "AutoCAD", "MATLAB", "SolidWorks"],
+    title: "Introduction to Python",
+    category: "Programming",
+    instructor: "Kwame A.",
+    image: "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400&h=250&fit=crop",
+    rating: 4.8,
+  },
+  {
+    title: "AutoCAD for Engineers",
+    category: "Engineering",
+    instructor: "Kofi M.",
     image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=250&fit=crop",
+    rating: 4.9,
   },
   {
-    label: "Sciences",
-    skills: ["Organic Chemistry", "Statistics", "Physics"],
-    image: "https://images.unsplash.com/photo-1532094349884-543559244b88?w=400&h=250&fit=crop",
-  },
-  {
-    label: "Languages",
-    skills: ["French", "Twi", "Arabic", "Hausa"],
+    title: "French Conversation",
+    category: "Languages",
+    instructor: "Ama K.",
     image: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&h=250&fit=crop",
+    rating: 4.7,
   },
   {
-    label: "Design & Architecture",
-    skills: ["Revit", "SketchUp", "Illustrator", "Figma"],
-    image: "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=250&fit=crop",
-  },
-  {
-    label: "Business & Finance",
-    skills: ["Accounting", "Excel", "Financial Modelling"],
+    title: "Financial Modelling",
+    category: "Business",
+    instructor: "Abena S.",
     image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop",
+    rating: 4.6,
   },
   {
-    label: "Arts & Humanities",
-    skills: ["Music Theory", "Public Speaking", "Writing"],
-    image: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=400&h=250&fit=crop",
+    title: "UI/UX Design Basics",
+    category: "Design",
+    instructor: "Yaw B.",
+    image: "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=250&fit=crop",
+    rating: 4.8,
+  },
+  {
+    title: "Statistics & Probability",
+    category: "Sciences",
+    instructor: "Efua N.",
+    image: "https://images.unsplash.com/photo-1532094349884-543559244b88?w=400&h=250&fit=crop",
+    rating: 4.5,
   },
 ];
 
 const TESTIMONIALS = [
   {
     name: "Abena Mensah",
-    faculty: "Computer Science, L3",
+    faculty: "Computer Science, Level 3",
     quote: "I taught Python and learned AutoCAD in exchange. SkillSwap saved me two semesters of struggling with engineering drawings.",
     initials: "AM",
   },
   {
     name: "Kwame Asante",
-    faculty: "Civil Engineering, L4",
+    faculty: "Civil Engineering, Level 4",
     quote: "Found a CS student who helped me with MATLAB for my final year project. Returned the favour with structural analysis tutorials.",
     initials: "KA",
   },
   {
     name: "Esi Ofori",
-    faculty: "Business Administration, L2",
-    quote: "Swapped Accounting lessons for French conversation practice. We meet twice a week — both of us are flying in our courses now.",
+    faculty: "Business Administration, Level 2",
+    quote: "Swapped Accounting lessons for French conversation practice. We meet twice a week — both of us are flying now.",
     initials: "EO",
-  },
-];
-
-const FAQS = [
-  {
-    q: "Is SkillSwap free to use?",
-    a: "Yes — completely free for all KNUST students. No hidden fees, no premium tiers. The whole point is peer-to-peer value exchange.",
-  },
-  {
-    q: "What if someone doesn't show up to a session?",
-    a: "You can cancel any pending session with one tap. After a session, both parties rate each other — persistent no-shows get flagged and ranked lower in searches.",
-  },
-  {
-    q: "Can I teach and learn multiple skills?",
-    a: "Absolutely. Add as many skills as you want on both sides. The more you list, the better your matches.",
-  },
-  {
-    q: "Do I need to be an expert to teach?",
-    a: "No. You just need to be meaningfully ahead of the person learning. A level-3 student can absolutely teach a level-1 student — that's the point.",
   },
 ];
 
@@ -115,155 +117,170 @@ export default function Home() {
   if (user) return null;
 
   return (
-    <div className="min-h-dvh bg-background overflow-x-hidden">
+    <div className="min-h-dvh bg-white overflow-x-hidden">
 
-      {/* ── NAVBAR ── */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-navy-800/60 bg-navy-900/95 backdrop-blur-sm">
-        <div className="mx-auto max-w-6xl px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-white">
-              <Repeat2 className="h-4 w-4" />
+      {/* ── NAV ── */}
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-navy-900/95 backdrop-blur-sm">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-500">
+              <Repeat2 className="h-4 w-4 text-white" />
             </div>
             <span className="text-sm font-bold text-white tracking-tight">
-              Skill<span className="text-primary">Swap</span>
+              Skill<span className="text-sky-400">Swap</span>
             </span>
           </Link>
-          <div className="flex items-center gap-2">
-            <Link href="/login">
-              <Button variant="ghost" size="sm" className="text-navy-200 hover:text-white hover:bg-navy-800 text-xs h-9">
-                Sign in
-              </Button>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="text-sm font-medium text-white/70 hover:text-white transition-colors px-3 py-2"
+            >
+              Sign in
             </Link>
-            <Link href="/register">
-              <Button size="sm" className="text-xs h-9">
-                Join free
-              </Button>
+            <Link
+              href="/register"
+              className="inline-flex items-center px-5 py-2 rounded-full bg-sky-500 text-white text-sm font-semibold hover:bg-sky-400 transition-colors"
+            >
+              Join free
             </Link>
           </div>
         </div>
       </header>
 
-      {/* ── SECTION 1: HERO ── */}
-      <section className="relative bg-navy-900 text-white overflow-hidden pt-14">
+      {/* ── HERO ── */}
+      <section className="relative bg-navy-800 overflow-hidden pt-14">
         <div className="absolute inset-0 bg-gradient-to-br from-navy-900 via-navy-800 to-navy-700" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-sky-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" aria-hidden />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-sky-400/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none" aria-hidden />
+        <div className="absolute inset-0 pointer-events-none" aria-hidden>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-sky-500/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
+          <div className="absolute bottom-0 left-0 w-80 h-80 bg-sky-400/20 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4" />
+        </div>
 
-        <div className="relative mx-auto max-w-4xl px-4 py-24 md:py-32 text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-navy-700 bg-navy-800/60 px-4 py-1.5 text-xs text-navy-200 mb-8 font-medium">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Exclusively for KNUST students
-          </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-36">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs text-white/80 mb-8 font-medium">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Exclusively for KNUST students
+            </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
-            Teach what you know.<br />
-            <span className="text-primary">Learn what you need.</span>
-          </h1>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">
+              Exchange Skills,<br />
+              <span className="text-sky-400">Grow Together.</span>
+            </h1>
 
-          <p className="text-lg text-navy-300 max-w-xl mx-auto mb-10 leading-relaxed">
-            SkillSwap connects KNUST students in a peer-to-peer skill exchange network.
-            Trade expertise, book sessions, and grow across every faculty.
-          </p>
+            <p className="mt-5 text-lg text-white/70 leading-relaxed max-w-lg">
+              Connect with fellow KNUST students to teach what you know and learn what you need. Free, peer-to-peer skill exchange.
+            </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16">
-            <Link href="/register">
-              <Button size="lg" className="w-full sm:w-auto gap-2 px-8 text-base">
+            <div className="mt-8 flex flex-wrap gap-4">
+              <Link
+                href="/register"
+                className="inline-flex items-center px-7 py-3.5 rounded-full bg-sky-500 text-white font-semibold text-sm hover:bg-sky-400 transition-colors shadow-lg shadow-sky-500/25"
+              >
                 Start swapping — it&apos;s free
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button size="lg" variant="ghost" className="w-full sm:w-auto text-navy-200 hover:text-white hover:bg-navy-800 text-base">
+              </Link>
+              <Link
+                href="/login"
+                className="inline-flex items-center px-7 py-3.5 rounded-full border-2 border-white/30 text-white font-semibold text-sm hover:bg-white/10 transition-colors"
+              >
                 I already have an account
-              </Button>
-            </Link>
-          </div>
+              </Link>
+            </div>
 
-          {/* Trust line */}
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-navy-400">
-            {[
-              "No money exchanged — just knowledge",
-              "Online & offline sessions",
-              "Rated & reviewed peers",
-            ].map((t) => (
-              <span key={t} className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                {t}
-              </span>
-            ))}
+            <div className="mt-10 flex flex-wrap gap-x-8 gap-y-3 text-sm text-white/50">
+              {["No money exchanged — just knowledge", "Online & offline sessions", "Rated & reviewed peers"].map((t) => (
+                <span key={t} className="flex items-center gap-1.5">
+                  <svg className="h-3.5 w-3.5 text-emerald-400 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  {t}
+                </span>
+              ))}
+            </div>
           </div>
+        </div>
+
+        {/* Right-side image — desktop only */}
+        <div className="hidden lg:block absolute right-0 top-0 w-[45%] h-full">
+          <div className="absolute inset-0 bg-gradient-to-r from-navy-800 to-transparent z-10" />
+          <img
+            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=600&fit=crop"
+            alt="KNUST students collaborating"
+            className="w-full h-full object-cover"
+          />
         </div>
       </section>
 
-      {/* ── SECTION 2: HOW IT WORKS ── */}
-      <section className="py-20 bg-background">
-        <div className="mx-auto max-w-5xl px-4">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-navy-900 dark:text-foreground tracking-tight">
-              Three steps to your first swap
-            </h2>
+      {/* ── HOW IT WORKS ── */}
+      <section className="py-16 sm:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-navy-800">How It Works</h2>
+            <p className="mt-3 text-gray-500 max-w-md mx-auto">
+              Get started in three simple steps and begin your learning journey.
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {STEPS.map(({ step, title, description }) => (
-              <div key={step} className="text-center">
-                <div className="w-14 h-14 bg-sky-100 dark:bg-sky-500/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-lg font-bold text-navy-800 dark:text-sky-400">{step}</span>
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            {HOW_IT_WORKS.map((item) => (
+              <div key={item.step} className="text-center">
+                <div className="w-14 h-14 bg-sky-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  {item.icon}
                 </div>
-                <h3 className="text-base font-semibold text-navy-900 dark:text-foreground mb-2">{title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+                <h3 className="text-lg font-semibold text-navy-800 mb-2">{item.title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── SECTION 3: SKILL CATEGORIES ── */}
-      <section className="py-20 bg-navy-50 dark:bg-navy-950/50">
-        <div className="mx-auto max-w-5xl px-4">
+      {/* ── FEATURED SKILLS ── */}
+      <section className="py-16 sm:py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-navy-900 dark:text-foreground tracking-tight">
-              Skills across every faculty
-            </h2>
-            <p className="text-muted-foreground text-sm mt-3 max-w-lg mx-auto">
-              From Python to Pianoforte — if you know it, someone at KNUST wants to learn it.
+            <h2 className="text-3xl sm:text-4xl font-bold text-navy-800">Featured Skills</h2>
+            <p className="mt-3 text-gray-500 max-w-md mx-auto">
+              Discover skills offered by students across KNUST.
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {SKILL_CATEGORIES.map(({ label, skills, image }) => (
+            {FEATURED_SKILLS.map((skill) => (
               <div
-                key={label}
-                className="bg-white dark:bg-card rounded-2xl overflow-hidden border border-gray-200 dark:border-border hover:shadow-lg transition-shadow group"
+                key={skill.title}
+                className="bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow group"
               >
                 <div className="relative h-44 overflow-hidden">
                   <img
-                    src={image}
-                    alt={label}
+                    src={skill.image}
+                    alt={skill.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                  <span className="absolute top-3 left-3 px-3 py-1 bg-navy-900/80 backdrop-blur-sm text-white text-xs font-semibold rounded-full">
-                    {label}
+                  <span className="absolute top-3 left-3 px-3 py-1 bg-sky-500 text-white text-xs font-semibold rounded-full">
+                    {skill.category}
                   </span>
                 </div>
-                <div className="p-4">
-                  <div className="flex flex-wrap gap-1.5">
-                    {skills.map((s) => (
-                      <span
-                        key={s}
-                        className="text-xs bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-100 dark:border-sky-500/20 rounded px-2 py-0.5 font-medium"
-                      >
-                        {s}
-                      </span>
-                    ))}
-                    <span className="text-xs text-muted-foreground/60 self-center">+ more</span>
+                <div className="p-5">
+                  <h3 className="font-semibold text-navy-800 mb-3">{skill.title}</h3>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 bg-navy-800 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">
+                        {skill.instructor[0]}
+                      </div>
+                      <span className="text-sm text-gray-500">{skill.instructor}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <svg className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                        <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                      </svg>
+                      <span className="text-sm text-gray-500 font-medium">{skill.rating}</span>
+                    </div>
                   </div>
                   <Link
                     href="/register"
-                    className="mt-4 block w-full text-center py-2.5 rounded-lg bg-navy-800 dark:bg-navy-700 text-white text-sm font-semibold hover:bg-navy-700 dark:hover:bg-navy-600 transition-colors"
+                    className="mt-4 block w-full text-center py-2.5 rounded-lg bg-navy-800 text-white text-sm font-semibold hover:bg-navy-700 transition-colors"
                   >
-                    Find a swap partner
+                    Request Swap
                   </Link>
                 </div>
               </div>
@@ -273,106 +290,70 @@ export default function Home() {
           <div className="text-center mt-10">
             <Link
               href="/register"
-              className="inline-flex items-center px-6 py-3 rounded-full border-2 border-navy-800 dark:border-navy-600 text-navy-800 dark:text-navy-200 font-semibold text-sm hover:bg-navy-800 hover:text-white dark:hover:bg-navy-700 transition-colors"
+              className="inline-flex items-center px-6 py-3 rounded-full border-2 border-navy-800 text-navy-800 font-semibold text-sm hover:bg-navy-800 hover:text-white transition-colors"
             >
-              See all skills on the platform →
+              View All Skills →
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── SECTION 4: TESTIMONIALS ── */}
-      <section className="py-20 bg-background">
-        <div className="mx-auto max-w-5xl px-4">
+      {/* ── TESTIMONIALS ── */}
+      <section className="py-16 sm:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-navy-900 dark:text-foreground tracking-tight">
-              What students say
-            </h2>
+            <h2 className="text-3xl sm:text-4xl font-bold text-navy-800">What Students Say</h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {TESTIMONIALS.map(({ name, faculty, quote, initials }) => (
               <div
                 key={name}
-                className="bg-gray-50 dark:bg-card rounded-2xl p-6 border border-gray-200 dark:border-border"
+                className="bg-gray-50 rounded-2xl p-6 border border-gray-200"
               >
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 bg-sky-500 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0">
                     {initials}
                   </div>
                   <div>
-                    <p className="font-semibold text-navy-900 dark:text-foreground text-sm">{name}</p>
-                    <p className="text-xs text-muted-foreground">{faculty}</p>
+                    <p className="font-semibold text-navy-800 text-sm">{name}</p>
+                    <p className="text-xs text-gray-400">{faculty}</p>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">&ldquo;{quote}&rdquo;</p>
+                <p className="text-sm text-gray-500 leading-relaxed">&ldquo;{quote}&rdquo;</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── SECTION 5: FAQ ── */}
-      <section className="py-20 bg-navy-50 dark:bg-navy-950/50">
-        <div className="mx-auto max-w-3xl px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-navy-900 dark:text-foreground tracking-tight">
-              Common questions
-            </h2>
-          </div>
-
-          <div className="space-y-4">
-            {FAQS.map(({ q, a }, i) => (
-              <div key={q} className="rounded-xl border bg-card p-5">
-                <p className="font-semibold text-sm text-navy-900 dark:text-foreground mb-2 flex items-start gap-2">
-                  <span className="shrink-0 w-5 h-5 rounded-full bg-navy-100 dark:bg-navy-800 text-navy-600 dark:text-navy-300 text-xs font-bold flex items-center justify-center mt-0.5">
-                    {i + 1}
-                  </span>
-                  {q}
-                </p>
-                <p className="text-sm text-muted-foreground leading-relaxed pl-7">{a}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── SECTION 6: FINAL CTA ── */}
-      <section className="py-24 bg-navy-900 text-white">
-        <div className="mx-auto max-w-3xl px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-            Ready to learn something new?
+      {/* ── CTA ── */}
+      <section className="py-16 sm:py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold text-navy-800">
+            Ready to Learn Something New?
           </h2>
-          <p className="text-navy-300 text-base mb-10 max-w-md mx-auto leading-relaxed">
-            Join KNUST students already teaching and learning from each other.
-            No cost. No commitment. Just knowledge.
+          <p className="mt-4 text-gray-500 max-w-md mx-auto leading-relaxed">
+            Join KNUST students already teaching and learning from each other. No cost. No commitment. Just knowledge.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/register">
-              <Button size="lg" className="w-full sm:w-auto gap-2 px-10 text-base">
-                Create your free account
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/search">
-              <Button size="lg" variant="ghost" className="w-full sm:w-auto text-navy-200 hover:text-white hover:bg-navy-800 text-base">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Browse skills first
-              </Button>
-            </Link>
-          </div>
+          <Link
+            href="/register"
+            className="inline-flex items-center mt-8 px-8 py-3.5 rounded-full bg-navy-800 text-white font-semibold text-sm hover:bg-navy-700 transition-colors shadow-lg shadow-navy-800/25"
+          >
+            Join Now — It&apos;s Free
+          </Link>
         </div>
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="bg-navy-950 border-t border-navy-800 py-8">
-        <div className="mx-auto max-w-5xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <footer className="bg-navy-950 border-t border-navy-800/60 py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary text-white">
-              <Repeat2 className="h-3 w-3" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500">
+              <Repeat2 className="h-3.5 w-3.5 text-white" />
             </div>
-            <span className="text-xs font-bold text-white">
-              Skill<span className="text-primary">Swap</span> KNUST
+            <span className="text-sm font-bold text-white">
+              Skill<span className="text-sky-400">Swap</span> KNUST
             </span>
           </div>
           <div className="flex items-center gap-6 text-xs text-navy-500">
