@@ -75,7 +75,7 @@ export default function SearchPage() {
     <div className="min-h-dvh bg-background">
       <div className="mx-auto px-4 pt-4 md:pt-8 pb-8 max-w-4xl">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Find Peers</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Find Peers</h1>
           <OnlineCount variant="badge" />
         </div>
 

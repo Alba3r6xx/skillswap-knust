@@ -163,7 +163,7 @@ export default function ProfilePage() {
   return (
     <div className="bg-background min-h-dvh">
       <div className="container mx-auto px-4 pt-4 md:pt-8 pb-24 max-w-2xl">
-        <h1 className="text-2xl font-bold text-navy-900 dark:text-foreground mb-6">Your Profile</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-navy-900 dark:text-foreground mb-6">Your Profile</h1>
 
         {/* ── Profile header card ── */}
         <Card className="mb-6">

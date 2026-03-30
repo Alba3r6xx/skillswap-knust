@@ -166,7 +166,7 @@
   --radius: 0.75rem;
 
   /* Surfaces */
-  --background:          oklch(0.990 0.003 74);   /* Warm white — not paper-cold */
+  --background:          oklch(0.956 0.004 247);  /* iOS grouped background — cards float on gray */
   --foreground:          oklch(0.22 0.072 247);   /* Navy 900 */
   --card:                oklch(1 0 0);
   --card-foreground:     oklch(0.22 0.072 247);
@@ -187,7 +187,7 @@
 
   /* States */
   --destructive:         oklch(0.577 0.245 27.325);
-  --border:              oklch(0.920 0.008 247);
+  --border:              oklch(0.905 0.008 247);
   --input:               oklch(0.920 0.008 247);
   --ring:                oklch(0.769 0.188 70);   /* Gold — focus rings */
 

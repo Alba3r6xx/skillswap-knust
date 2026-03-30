@@ -272,7 +272,7 @@ export default function SessionsPage() {
   return (
     <div className="min-h-dvh bg-background">
       <div className="mx-auto px-4 pt-4 md:pt-8 pb-8 max-w-3xl">
-        <h1 className="text-2xl font-bold mb-6">Sessions</h1>
+        <h1 className="text-3xl font-bold tracking-tight mb-6">Sessions</h1>
 
         <Tabs defaultValue="upcoming">
           <TabsList className="mb-4">

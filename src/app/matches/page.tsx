@@ -199,7 +199,7 @@ export default function MatchesPage() {
     <div className="min-h-dvh bg-background">
       <div className="mx-auto px-4 pt-4 md:pt-8 pb-8 max-w-4xl">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Your Matches</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Your Matches</h1>
           {mutual.length > 0 && (
             <span className="text-xs bg-gold-100 text-navy-800 dark:bg-gold-500/20 dark:text-gold-300 px-3 py-1.5 rounded-full font-semibold">
               {mutual.length} perfect match{mutual.length > 1 ? "es" : ""}
