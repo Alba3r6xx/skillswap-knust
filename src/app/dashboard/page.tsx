@@ -20,7 +20,17 @@ import {
   TrendingUp,
   MessageSquare,
   ArrowRight,
+  Zap,
+  Bell,
 } from "lucide-react";
+import { XPBar } from "@/components/gamification/xp-bar";
+import { StreakCard } from "@/components/gamification/streak-card";
+import { Leaderboard } from "@/components/gamification/leaderboard";
+import { OnlineCount } from "@/components/social-proof/online-count";
+import { ActivityStream } from "@/components/social-proof/activity-stream";
+import { EmptyState } from "@/components/empty-state";
+import { computeSwapStreak, getProfileCompletion, computeAchievements, RARITY_STYLES } from "@/lib/gamification";
+import { AnimatedCounter } from "@/components/animated-counter";
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();
@@ -60,15 +70,25 @@ export default function DashboardPage() {
     fetchData();
   }, [user, isLoading, router]);
 
+  const streak = user && sessions.length >= 0 ? computeSwapStreak(sessions, user.id) : 0;
+  const { score: profileScore, items: profileItems } = user ? getProfileCompletion(user) : { score: 0, items: [] };
+  const achievements = user ? computeAchievements(sessions, user, user.id) : [];
+
   if (isLoading || !user) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-background p-6">
-        <div className="container mx-auto max-w-5xl space-y-6">
-          <Skeleton className="h-8 w-48" />
-          <div className="grid md:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24" />)}
+      <div className="min-h-dvh bg-background p-4 md:p-6">
+        <div className="mx-auto max-w-5xl space-y-5">
+          <div className="space-y-1.5">
+            <Skeleton className="h-7 w-48" />
+            <Skeleton className="h-4 w-32" />
           </div>
-          <Skeleton className="h-64" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
+          </div>
+          <div className="grid md:grid-cols-3 gap-5">
+            <Skeleton className="md:col-span-2 h-64 rounded-xl" />
+            <Skeleton className="h-64 rounded-xl" />
+          </div>
         </div>
       </div>
     );
@@ -77,25 +97,80 @@ export default function DashboardPage() {
   const upcoming = sessions.filter((s) => s.status === "accepted");
   const completed = sessions.filter((s) => s.status === "completed");
   const pending = sessions.filter((s) => s.status === "pending");
-  const badges = computeBadges(sessions, user.id);
+  const incompleteItems = profileItems.filter((i) => !i.done);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-background">
-      <div className="container mx-auto px-4 pt-4 pb-6 max-w-5xl">
-        <h1 className="text-2xl font-bold mb-6">
-          Welcome back, {user.name.split(" ")[0]}! 👋
-        </h1>
+    <div className="min-h-dvh bg-background">
+      <ActivityStream currentUserId={user.id} />
+
+      <div className="mx-auto px-4 pt-5 pb-8 max-w-5xl">
+
+        {/* Header row */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 content-fade-in">
+          <div>
+            <h1 className="text-2xl font-bold text-navy-900 dark:text-foreground">
+              Welcome back, {user.name.split(" ")[0]}
+            </h1>
+            <OnlineCount variant="inline" className="mt-1" />
+          </div>
+          {pending.length > 0 && (
+            <Link href="/sessions">
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary text-white px-4 py-2.5 text-sm font-semibold
+                shadow-[0_2px_8px_oklch(0.769_0.188_70/0.3)] hover:brightness-105 transition-all active:scale-[0.97]">
+                <Bell className="h-4 w-4" />
+                {pending.length} request{pending.length > 1 ? "s" : ""} waiting — review now
+              </div>
+            </Link>
+          )}
+        </div>
+
+        {/* Profile completion nudge */}
+        {profileScore < 100 && (
+          <div className="mb-6 rounded-xl border border-gold-200 bg-gold-50 dark:bg-gold-500/10 dark:border-gold-500/30 p-4 content-fade-in">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="h-4 w-4 text-gold-600" />
+                  <p className="text-sm font-semibold text-navy-800 dark:text-gold-300">
+                    Profile {profileScore}% complete — finish it for better matches
+                  </p>
+                </div>
+                <div className="h-1.5 rounded-full bg-gold-200 dark:bg-gold-500/30 mb-2 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-700 ease-out"
+                    style={{ width: `${profileScore}%` }}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  {incompleteItems.slice(0, 3).map((item) => (
+                    <span key={item.label} className="text-xs text-gold-700 dark:text-gold-400 flex items-center gap-1">
+                      <span className="h-1 w-1 rounded-full bg-gold-400" />
+                      {item.label} <span className="text-gold-600 font-semibold">+{item.xp} XP</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <Link href="/profile">
+                <Button size="sm" className="shrink-0">
+                  Complete
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 stagger-children">
+          <Card className="group">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-500/20 flex items-center justify-center">
-                  <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <div className="h-10 w-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 flex items-center justify-center shrink-0">
+                  <GraduationCap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{user.skills_to_teach.length}</p>
+                <div className="min-w-0">
+                  <p className="text-2xl font-bold font-display text-navy-900 dark:text-foreground">
+                    <AnimatedCounter value={user.skills_to_teach.length} />
+                  </p>
                   <p className="text-xs text-muted-foreground">Teaching</p>
                 </div>
               </div>
@@ -104,11 +179,13 @@ export default function DashboardPage() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center">
-                  <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <div className="h-10 w-10 rounded-xl bg-sky-50 dark:bg-sky-500/15 flex items-center justify-center shrink-0">
+                  <BookOpen className="h-5 w-5 text-sky-600 dark:text-sky-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{user.skills_to_learn.length}</p>
+                <div className="min-w-0">
+                  <p className="text-2xl font-bold font-display text-navy-900 dark:text-foreground">
+                    <AnimatedCounter value={user.skills_to_learn.length} />
+                  </p>
                   <p className="text-xs text-muted-foreground">Learning</p>
                 </div>
               </div>
@@ -117,11 +194,13 @@ export default function DashboardPage() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center">
-                  <Calendar className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                <div className="h-10 w-10 rounded-xl bg-gold-50 dark:bg-gold-500/15 flex items-center justify-center shrink-0">
+                  <Calendar className="h-5 w-5 text-gold-600 dark:text-gold-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{completed.length}</p>
+                <div className="min-w-0">
+                  <p className="text-2xl font-bold font-display text-navy-900 dark:text-foreground">
+                    <AnimatedCounter value={completed.length} />
+                  </p>
                   <p className="text-xs text-muted-foreground">Sessions</p>
                 </div>
               </div>
@@ -130,11 +209,15 @@ export default function DashboardPage() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-purple-100 dark:bg-purple-500/20 flex items-center justify-center">
-                  <Star className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                <div className="h-10 w-10 rounded-xl bg-navy-50 dark:bg-navy-500/15 flex items-center justify-center shrink-0">
+                  <Star className="h-5 w-5 text-navy-600 dark:text-navy-300" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{user.rating > 0 ? user.rating.toFixed(1) : "—"}</p>
+                <div className="min-w-0">
+                  <p className="text-2xl font-bold font-display text-navy-900 dark:text-foreground">
+                    {user.rating > 0 ? (
+                      <AnimatedCounter value={user.rating} decimals={1} />
+                    ) : "—"}
+                  </p>
                   <p className="text-xs text-muted-foreground">Rating</p>
                 </div>
               </div>
@@ -145,6 +228,13 @@ export default function DashboardPage() {
         <div className="grid md:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="md:col-span-2 space-y-6">
+
+            {/* XP + Streak row */}
+            <div className="grid grid-cols-2 gap-4">
+              <XPBar xp={user.xp || 0} />
+              <StreakCard streak={streak} />
+            </div>
+
             {/* Upcoming Sessions */}
             <Card>
               <CardHeader className="pb-3">
@@ -159,24 +249,27 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 {upcoming.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">
-                    No upcoming sessions.{" "}
-                    <Link href="/search" className="text-amber-600 hover:underline">Find a peer</Link>
-                  </p>
+                  <EmptyState
+                    icon="📅"
+                    title="No upcoming sessions"
+                    description="Book a session with a peer to start exchanging skills."
+                    action={{ label: "Find a peer", href: "/search" }}
+                    secondaryAction={{ label: "View matches", href: "/matches" }}
+                  />
                 ) : (
                   <div className="space-y-3">
                     {upcoming.slice(0, 3).map((session) => (
                       <div
                         key={session.id}
-                        className="flex items-center justify-between p-3 rounded-lg border bg-white dark:bg-muted/50"
+                        className="flex items-center justify-between p-3 rounded-lg border bg-card"
                       >
                         <div>
                           <p className="text-sm font-medium">{session.skill}</p>
                           <p className="text-xs text-muted-foreground">
-                            {new Date(session.date).toLocaleDateString()} at {session.time}
+                            {new Date(session.date).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} at {session.time}
                           </p>
                         </div>
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs capitalize">
                           {session.mode}
                         </Badge>
                       </div>
@@ -185,25 +278,6 @@ export default function DashboardPage() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Pending Requests */}
-            {pending.length > 0 && (
-              <Card className="border-amber-200 dark:border-amber-500/30">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-amber-600" />
-                    Pending Requests ({pending.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Link href="/sessions">
-                    <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white">
-                      Review Requests
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Top Matches */}
             <Card>
@@ -219,24 +293,27 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 {topMatches.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">
-                    Add skills to your profile to see matches.
-                  </p>
+                  <EmptyState
+                    icon="🔍"
+                    title="No matches yet"
+                    description="Add skills to teach and learn to unlock peer matches."
+                    action={{ label: "Complete your profile", href: "/profile" }}
+                  />
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {topMatches.map((peer) => {
                       const initials = peer.name.split(" ").map((n) => n[0]).join("").toUpperCase();
                       return (
                         <Link
                           key={peer.id}
                           href={`/profile/${peer.id}`}
-                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors"
+                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-navy-50 dark:hover:bg-navy-900/20 transition-colors"
                         >
                           <Avatar className="h-9 w-9">
                             {peer.avatar_url ? (
                               <img src={peer.avatar_url} alt={peer.name} className="h-full w-full object-cover rounded-full" />
                             ) : (
-                              <AvatarFallback className="bg-amber-100 text-amber-700 text-xs">
+                              <AvatarFallback className="bg-gold-100 text-navy-800 text-xs font-semibold">
                                 {initials}
                               </AvatarFallback>
                             )}
@@ -247,7 +324,7 @@ export default function DashboardPage() {
                           </div>
                           {peer.rating > 0 && (
                             <div className="flex items-center gap-1 text-xs">
-                              <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                              <Star className="h-3 w-3 text-gold-500 fill-gold-500" />
                               {peer.rating.toFixed(1)}
                             </div>
                           )}
@@ -258,70 +335,65 @@ export default function DashboardPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Leaderboard */}
+            <Leaderboard currentUserId={user.id} limit={5} />
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Profile Completion */}
-            {(user.skills_to_teach.length === 0 || user.skills_to_learn.length === 0 || !user.bio) && (
-              <Card className="border-amber-200 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/30">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-amber-600" />
-                    Complete Your Profile
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    A complete profile helps you find better matches.
-                  </p>
-                  <div className="space-y-1.5 text-sm">
-                    {!user.bio && <p className="text-amber-700 dark:text-amber-400">• Add a bio</p>}
-                    {user.skills_to_teach.length === 0 && <p className="text-amber-700 dark:text-amber-400">• Add skills you can teach</p>}
-                    {user.skills_to_learn.length === 0 && <p className="text-amber-700 dark:text-amber-400">• Add skills you want to learn</p>}
-                  </div>
-                  <Link href="/profile">
-                    <Button size="sm" className="mt-3 bg-amber-500 hover:bg-amber-600 text-white">
-                      Edit Profile
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Unread Messages */}
             {unreadCount > 0 && (
-              <Card>
+              <Card className="border-sky-200 dark:border-sky-500/30">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center">
-                      <MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <div className="h-10 w-10 rounded-xl bg-sky-50 dark:bg-sky-500/15 flex items-center justify-center shrink-0">
+                      <MessageSquare className="h-5 w-5 text-sky-600 dark:text-sky-400" />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{unreadCount} unread message{unreadCount > 1 ? "s" : ""}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold">{unreadCount} unread</p>
+                      <p className="text-xs text-muted-foreground">Don&apos;t leave them waiting</p>
                     </div>
                     <Link href="/messages">
-                      <Button size="sm" variant="outline">View</Button>
+                      <Button size="sm" variant="navy">Reply</Button>
                     </Link>
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* Badges */}
+            {/* Achievements */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Badges ({badges.length})</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">Achievements</CardTitle>
+                  <span className="text-xs text-muted-foreground">{achievements.length} earned</span>
+                </div>
               </CardHeader>
               <CardContent>
-                {badges.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Complete sessions to earn badges!</p>
+                {achievements.length === 0 ? (
+                  <EmptyState
+                    icon="🏅"
+                    title="No badges yet"
+                    description="Complete your first session to earn your first badge."
+                    action={{ label: "Find a peer", href: "/search" }}
+                    className="py-8"
+                  />
                 ) : (
                   <div className="flex flex-wrap gap-2">
-                    {badges.map((b) => (
-                      <div key={b.id} className="flex items-center gap-1.5 px-2 py-1 rounded-lg border bg-white dark:bg-muted/50" title={b.description}>
-                        <span className="text-base">{b.icon}</span>
-                        <span className="text-xs font-medium">{b.name}</span>
+                    {achievements.slice(0, 8).map((b) => (
+                      <div
+                        key={b.id}
+                        title={b.description}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium ${
+                          RARITY_STYLES[b.rarity].bg
+                        } ${
+                          RARITY_STYLES[b.rarity].border
+                        }`}
+                      >
+                        <span className="text-sm">{b.icon}</span>
+                        {b.name}
                       </div>
                     ))}
                   </div>
@@ -336,13 +408,24 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <Link href="/search" className="block">
-                  <Button variant="outline" className="w-full justify-start gap-2 text-sm">
+                  <Button variant="outline" className="w-full justify-start gap-2 text-sm rounded-lg">
                     <Users className="h-4 w-4" /> Find Peers
                   </Button>
                 </Link>
                 <Link href="/messages" className="block">
-                  <Button variant="outline" className="w-full justify-start gap-2 text-sm">
+                  <Button variant="outline" className="w-full justify-start gap-2 text-sm rounded-lg">
                     <MessageSquare className="h-4 w-4" /> Messages
+                    {unreadCount > 0 && (
+                      <span className="ml-auto text-xs bg-sky-500 text-white rounded-full px-1.5 py-0.5 font-semibold">{unreadCount}</span>
+                    )}
+                  </Button>
+                </Link>
+                <Link href="/profile" className="block">
+                  <Button variant="outline" className="w-full justify-start gap-2 text-sm rounded-lg">
+                    <Zap className="h-4 w-4 text-primary" /> Edit Profile
+                    {profileScore < 100 && (
+                      <span className="ml-auto text-xs text-gold-600 font-semibold">{profileScore}%</span>
+                    )}
                   </Button>
                 </Link>
               </CardContent>

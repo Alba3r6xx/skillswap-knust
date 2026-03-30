@@ -5,17 +5,24 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Repeat2, Eye, EyeOff, Sun, Moon } from "lucide-react";
+import { Repeat2, Eye, EyeOff, Sun, Moon, BookOpen, Zap, Trophy } from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { z } from "zod";
 
+const KNUST_DOMAINS = ["@st.knust.edu.gh", "@knust.edu.gh"];
+
 const loginSchema = z.object({
-  email: z.string().email("Enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z
+    .string()
+    .email("Enter a valid email address")
+    .refine(
+      (e) => KNUST_DOMAINS.some((d) => e.endsWith(d)),
+      { message: "Must be a KNUST email (@st.knust.edu.gh or @knust.edu.gh)" }
+    ),
+  password: z.string().min(1, "Password is required"),
 });
 
 export default function LoginPage() {
@@ -67,90 +74,177 @@ export default function LoginPage() {
   if (authLoading) return null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-background dark:via-background dark:to-background px-4">
-      {mounted && (
-        <div className="fixed top-4 right-4 z-50">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 rounded-full bg-background/80 backdrop-blur"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
-        </div>
-      )}
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-white">
-              <Repeat2 className="h-5 w-5" />
-            </div>
-            <span className="text-xl font-bold">
-              Skill<span className="text-amber-500">Swap</span>
-            </span>
+    <div className="min-h-dvh flex">
+      {/* ── LEFT PANEL (desktop only) ── */}
+      <div className="hidden lg:flex lg:w-[45%] xl:w-[40%] bg-navy-900 flex-col justify-between p-10 relative overflow-hidden shrink-0">
+        {/* dot grid texture */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{ backgroundImage: "radial-gradient(circle at 1px 1px,white 1px,transparent 0)", backgroundSize: "28px 28px" }}
+          aria-hidden
+        />
+        {/* gold glow */}
+        <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full blur-3xl opacity-10"
+          style={{ background: "oklch(0.769 0.188 70)" }} aria-hidden />
+
+        {/* Logo */}
+        <div className="relative flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
+            <Repeat2 className="h-5 w-5 text-white" />
           </div>
-          <CardTitle className="text-2xl">Welcome back</CardTitle>
-          <CardDescription>Sign in to your account to continue</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-400 text-sm rounded-lg p-3">
-                {error}
+          <span className="text-lg font-black text-white tracking-tight">
+            Skill<span className="text-primary">Swap</span>
+          </span>
+        </div>
+
+        {/* Middle copy */}
+        <div className="relative space-y-6">
+          <div>
+            <h2 className="text-3xl font-black text-white leading-tight mb-3">
+              Welcome back to<br />your skill network
+            </h2>
+            <p className="text-navy-300 text-sm leading-relaxed">
+              Your sessions, matches, and messages are waiting. Keep building your academic reputation.
+            </p>
+          </div>
+          <ul className="space-y-3">
+            {[
+              { icon: BookOpen, text: "Resume your pending sessions" },
+              { icon: Zap,      text: "Check your new skill matches" },
+              { icon: Trophy,   text: "Track your XP and rank progress" },
+            ].map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-start gap-3 text-sm text-navy-300">
+                <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-lg bg-navy-800 shrink-0">
+                  <Icon className="h-3.5 w-3.5 text-primary" />
+                </span>
+                {text}
+              </li>
+            ))}
+          </ul>
+          {/* Stats strip */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { value: "1,200+", label: "Students" },
+              { value: "4,800+", label: "Sessions" },
+              { value: "4.8★",   label: "Avg rating" },
+            ].map(({ value, label }) => (
+              <div key={label} className="rounded-xl bg-navy-800/60 border border-navy-700/60 px-3 py-2.5 text-center">
+                <p className="text-base font-black text-white">{value}</p>
+                <p className="text-[11px] text-navy-400 mt-0.5">{label}</p>
               </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <p className="relative text-xs text-navy-500">
+          New to SkillSwap?{" "}
+          <Link href="/register" className="text-primary hover:underline font-medium">Create a free account</Link>
+        </p>
+      </div>
+
+      {/* ── RIGHT PANEL — Form ── */}
+      <div className="flex-1 flex flex-col bg-background overflow-y-auto">
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-6 py-4 shrink-0">
+          {/* Mobile logo */}
+          <Link href="/" className="flex items-center gap-2 lg:invisible">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
+              <Repeat2 className="h-4 w-4 text-white" />
+            </div>
+            <span className="text-sm font-black tracking-tight">
+              Skill<span className="text-primary">Swap</span>
+            </span>
+          </Link>
+          <div className="flex items-center gap-3 ml-auto">
+            <span className="text-xs text-muted-foreground hidden sm:inline">New to SkillSwap?</span>
+            <Link href="/register">
+              <Button variant="outline" size="sm">Create account</Button>
+            </Link>
+            {mounted && (
+              <Button variant="ghost" size="icon" className="h-9 w-9"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: "" })); }}
-                required
-                aria-invalid={!!fieldErrors.email}
-              />
-              {fieldErrors.email && <p className="text-xs text-red-500">{fieldErrors.email}</p>}
+          </div>
+        </div>
+
+        {/* Form body */}
+        <div className="flex-1 flex items-center justify-center px-6 py-8">
+          <div className="w-full max-w-md">
+            <div className="mb-8">
+              <h1 className="text-2xl font-black text-navy-900 dark:text-foreground mb-1">Welcome back</h1>
+              <p className="text-sm text-muted-foreground">Sign in with your KNUST student email</p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm rounded-lg px-4 py-3 flex items-start gap-2">
+                  <span className="mt-0.5 shrink-0">⚠</span>
+                  {error}
+                </div>
+              )}
+
+              {/* Email */}
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-sm font-medium">KNUST Email</Label>
                 <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => ({ ...p, password: "" })); }}
-                  required
-                  aria-invalid={!!fieldErrors.password}
+                  id="email"
+                  type="email"
+                  placeholder="you@st.knust.edu.gh"
+                  value={email}
+                  autoComplete="email"
+                  aria-invalid={!!fieldErrors.email}
+                  onChange={(e) => { setEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: "" })); }}
                 />
-                <button
-                  type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+                {fieldErrors.email
+                  ? <p className="text-xs text-red-500">{fieldErrors.email}</p>
+                  : <p className="text-xs text-muted-foreground">@st.knust.edu.gh or @knust.edu.gh</p>
+                }
               </div>
-              {fieldErrors.password && <p className="text-xs text-red-500">{fieldErrors.password}</p>}
-            </div>
-            <Button
-              type="submit"
-              className="w-full bg-amber-500 hover:bg-amber-600 text-white"
-              disabled={loading}
-            >
-              {loading ? "Signing in..." : "Sign In"}
-            </Button>
-            <div className="text-center text-sm text-muted-foreground">
+
+              {/* Password */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                  <span className="text-xs text-primary cursor-pointer hover:underline">Forgot password?</span>
+                </div>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    value={password}
+                    autoComplete="current-password"
+                    aria-invalid={!!fieldErrors.password}
+                    onChange={(e) => { setPassword(e.target.value); setFieldErrors((p) => ({ ...p, password: "" })); }}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {fieldErrors.password && <p className="text-xs text-red-500">{fieldErrors.password}</p>}
+              </div>
+
+              <Button type="submit" className="w-full mt-2" size="lg" loading={loading}>
+                Sign in
+              </Button>
+            </form>
+
+            {/* Mobile switch link */}
+            <p className="text-center text-sm text-muted-foreground mt-6 lg:hidden">
               Don&apos;t have an account?{" "}
-              <Link href="/register" className="text-amber-600 hover:underline font-medium">
-                Sign up
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+              <Link href="/register" className="text-primary font-semibold hover:underline">Create one free</Link>
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

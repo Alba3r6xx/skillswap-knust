@@ -112,8 +112,8 @@ export default function PushPrompt() {
       {showNotif && (
         <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-50 bg-background border rounded-xl shadow-lg p-4 animate-in slide-in-from-bottom-4">
           <div className="flex items-start gap-3">
-            <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center shrink-0">
-              <Bell className="h-5 w-5 text-amber-600" />
+            <div className="h-10 w-10 rounded-full bg-gold-100 dark:bg-gold-500/20 flex items-center justify-center shrink-0">
+              <Bell className="h-5 w-5 text-gold-600" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold">Enable Notifications</p>
@@ -123,7 +123,7 @@ export default function PushPrompt() {
               <div className="flex gap-2 mt-3">
                 <Button
                   size="sm"
-                  className="bg-amber-500 hover:bg-amber-600 text-white text-xs"
+                  className="text-xs"
                   disabled={subscribing}
                   onClick={handleEnableNotifications}
                 >

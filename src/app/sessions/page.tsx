@@ -25,6 +25,7 @@ import {
   Save,
 } from "lucide-react";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/empty-state";
 
 export default function SessionsPage() {
   const { user, isLoading } = useAuth();
@@ -67,8 +68,8 @@ export default function SessionsPage() {
 
   if (isLoading || !user) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-background p-6">
-        <div className="container mx-auto max-w-3xl space-y-4">
+      <div className="min-h-dvh bg-background p-4 md:p-6">
+        <div className="mx-auto max-w-3xl space-y-4">
           <Skeleton className="h-10 w-48" />
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-32" />)}
         </div>
@@ -137,7 +138,7 @@ export default function SessionsPage() {
               {other?.avatar_url ? (
                 <img src={other.avatar_url} alt={otherName} className="h-full w-full object-cover rounded-full" />
               ) : (
-                <AvatarFallback className="bg-amber-100 text-amber-700 text-sm font-semibold">
+                <AvatarFallback className="bg-gold-100 text-navy-800 text-sm font-semibold">
                   {initials}
                 </AvatarFallback>
               )}
@@ -148,13 +149,13 @@ export default function SessionsPage() {
                   <p className="text-sm font-semibold">{session.skill}</p>
                   <p className="text-xs text-muted-foreground">
                     {isTeacher ? "Teaching" : "Learning from"}{" "}
-                    <Link href={`/profile/${otherUserId}`} className="text-amber-600 hover:underline">{otherName}</Link>
+                    <Link href={`/profile/${otherUserId}`} className="text-primary hover:underline font-medium">{otherName}</Link>
                   </p>
                 </div>
                 <Badge className={`text-[10px] ${
-                  session.status === "pending" ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400"
-                  : session.status === "accepted" ? "bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400"
-                  : session.status === "completed" ? "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400"
+                  session.status === "pending" ? "bg-gold-100 text-gold-700 dark:bg-gold-500/20 dark:text-gold-400"
+                  : session.status === "accepted" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
+                  : session.status === "completed" ? "bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-400"
                   : "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
                 }`}>
                   {session.status}
@@ -207,14 +208,14 @@ export default function SessionsPage() {
             <div className="mt-3 space-y-1">
               {session.teacher_rating && (
                 <div className="flex items-center gap-1 text-xs">
-                  <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                  <Star className="h-3 w-3 text-gold-500 fill-gold-500" />
                   Teacher rated: {session.teacher_rating}/5
                   {session.teacher_feedback && <span className="text-muted-foreground ml-1">— &quot;{session.teacher_feedback}&quot;</span>}
                 </div>
               )}
               {session.learner_rating && (
                 <div className="flex items-center gap-1 text-xs">
-                  <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                  <Star className="h-3 w-3 text-gold-500 fill-gold-500" />
                   Learner rated: {session.learner_rating}/5
                   {session.learner_feedback && <span className="text-muted-foreground ml-1">— &quot;{session.learner_feedback}&quot;</span>}
                 </div>
@@ -226,7 +227,7 @@ export default function SessionsPage() {
           <div className="flex gap-2 mt-3">
             {session.status === "pending" && session.teacher_id === user.id && (
               <>
-                <Button size="sm" className="text-xs bg-green-600 hover:bg-green-700 text-white gap-1" onClick={() => handleAccept(session)}>
+                <Button size="sm" className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg gap-1" onClick={() => handleAccept(session)}>
                   <CheckCircle2 className="h-3 w-3" /> Accept
                 </Button>
                 <Button size="sm" variant="outline" className="text-xs text-red-600 gap-1" onClick={() => handleCancel(session)}>
@@ -241,7 +242,7 @@ export default function SessionsPage() {
             )}
             {session.status === "accepted" && (
               <>
-                <Button size="sm" className="text-xs bg-blue-600 hover:bg-blue-700 text-white gap-1" onClick={() => handleComplete(session)}>
+                <Button size="sm" className="text-xs bg-navy-700 hover:bg-navy-800 text-white rounded-lg gap-1" onClick={() => handleComplete(session)}>
                   <CheckCircle2 className="h-3 w-3" /> Mark Complete
                 </Button>
                 <Link href={`/messages?peer=${otherUserId}`}>
@@ -254,7 +255,7 @@ export default function SessionsPage() {
             {session.status === "completed" && !hasRated && (
               <Button
                 size="sm"
-                className="text-xs bg-amber-500 hover:bg-amber-600 text-white gap-1"
+                className="text-xs gap-1"
                 onClick={() => { setSelectedSession(session); setShowRateDialog(true); }}
               >
                 <Star className="h-3 w-3" /> Rate & Review
@@ -267,8 +268,8 @@ export default function SessionsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-background">
-      <div className="container mx-auto px-4 pt-4 pb-6 max-w-3xl">
+    <div className="min-h-dvh bg-background">
+      <div className="mx-auto px-4 pt-5 pb-8 max-w-3xl">
         <h1 className="text-2xl font-bold mb-6">Sessions</h1>
 
         <Tabs defaultValue="upcoming">
@@ -285,28 +286,49 @@ export default function SessionsPage() {
 
           <TabsContent value="upcoming">
             {accepted.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">No upcoming sessions</div>
+              <EmptyState
+                icon="📅"
+                title="No upcoming sessions"
+                description="You don't have any confirmed sessions yet. Find a peer and book one!"
+                action={{ label: "Find a peer to book", href: "/search" }}
+                secondaryAction={{ label: "View my matches", href: "/matches" }}
+              />
             ) : (
               <div className="space-y-3">{accepted.map(renderSession)}</div>
             )}
           </TabsContent>
           <TabsContent value="pending">
             {pending.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">No pending requests</div>
+              <EmptyState
+                icon="⏳"
+                title="No pending requests"
+                description="Requests you send or receive will appear here while waiting for acceptance."
+                action={{ label: "Send a session request", href: "/search" }}
+              />
             ) : (
               <div className="space-y-3">{pending.map(renderSession)}</div>
             )}
           </TabsContent>
           <TabsContent value="completed">
             {completed.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">No completed sessions yet</div>
+              <EmptyState
+                icon="🏆"
+                title="No completed sessions yet"
+                description="Complete your first session to start earning XP, badges, and ratings."
+                action={{ label: "Book your first session", href: "/search" }}
+              />
             ) : (
               <div className="space-y-3">{completed.map(renderSession)}</div>
             )}
           </TabsContent>
           <TabsContent value="cancelled">
             {cancelled.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">No cancelled sessions</div>
+              <EmptyState
+                icon="✅"
+                title="No cancelled sessions"
+                description="Great — all your sessions are on track!"
+                action={{ label: "Book a session", href: "/search" }}
+              />
             ) : (
               <div className="space-y-3">{cancelled.map(renderSession)}</div>
             )}
@@ -324,7 +346,7 @@ export default function SessionsPage() {
             <div className="flex gap-1 justify-center">
               {[1, 2, 3, 4, 5].map((s) => (
                 <button key={s} onClick={() => setRating(s)}>
-                  <Star className={`h-8 w-8 transition-colors ${s <= rating ? "text-amber-500 fill-amber-500" : "text-muted-foreground"}`} />
+                  <Star className={`h-8 w-8 transition-colors ${s <= rating ? "text-gold-500 fill-gold-500" : "text-muted-foreground"}`} />
                 </button>
               ))}
             </div>
@@ -337,7 +359,7 @@ export default function SessionsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowRateDialog(false)}>Cancel</Button>
-            <Button className="bg-amber-500 hover:bg-amber-600 text-white" disabled={rating === 0} onClick={handleRate}>
+            <Button disabled={rating === 0} onClick={handleRate}>
               Submit Rating
             </Button>
           </DialogFooter>

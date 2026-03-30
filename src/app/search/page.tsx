@@ -22,7 +22,12 @@ import {
   MessageSquare,
   Calendar,
   X,
+  Eye,
+  TrendingUp,
 } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { OnlineCount } from "@/components/social-proof/online-count";
+import { getViewerCount, getSkillRequestCount } from "@/lib/gamification";
 
 export default function SearchPage() {
   const { user, isLoading } = useAuth();
@@ -53,8 +58,8 @@ export default function SearchPage() {
 
   if (isLoading || !user) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-background p-6">
-        <div className="container mx-auto max-w-4xl space-y-4">
+      <div className="min-h-dvh bg-background p-4 md:p-6">
+        <div className="mx-auto max-w-4xl space-y-4">
           <Skeleton className="h-10 w-full" />
           <div className="grid md:grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-48" />)}
@@ -67,9 +72,12 @@ export default function SearchPage() {
   const hasFilters = faculty || mode || category || level;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-background">
-      <div className="container mx-auto px-4 pt-4 pb-6 max-w-4xl">
-        <h1 className="text-2xl font-bold mb-6">Find Peers</h1>
+    <div className="min-h-dvh bg-background">
+      <div className="mx-auto px-4 pt-5 pb-8 max-w-4xl">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold">Find Peers</h1>
+          <OnlineCount variant="badge" />
+        </div>
 
         {/* Search + Filters */}
         <div className="space-y-3 mb-6">
@@ -137,10 +145,12 @@ export default function SearchPage() {
             {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-48" />)}
           </div>
         ) : results.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-lg font-medium mb-2">No peers found</p>
-            <p className="text-sm text-muted-foreground">Try adjusting your search or filters.</p>
-          </div>
+          <EmptyState
+            icon="🔎"
+            title="No peers found"
+            description={hasFilters ? "Try relaxing your filters — there are great matches out there." : "Be the first! Add skills to your profile so others can find you."}
+            action={hasFilters ? { label: "Clear filters", onClick: () => { setFaculty(""); setMode(""); setCategory(""); setLevel(""); } } : { label: "Update my profile", href: "/profile" }}
+          />
         ) : (
           <div className="grid md:grid-cols-2 gap-4">
             {results.map((peer) => {
@@ -148,16 +158,37 @@ export default function SearchPage() {
               const lastSeen = getTimeSinceLastSeen(peer.last_seen);
               const isOnline = lastSeen === "Online now";
 
+              const viewers = getViewerCount(peer.id);
+              const topSkill = peer.skills_to_teach[0];
+              const skillDemand = topSkill ? getSkillRequestCount(topSkill.name) : 0;
+              const isHighDemand = skillDemand >= 8;
+
               return (
-                <Card key={peer.id} className="hover:shadow-md transition-shadow">
+                <Card key={peer.id} className="relative overflow-hidden content-fade-in">
+                  {isHighDemand && (
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-gold-400 via-gold-500 to-gold-400" />
+                  )}
                   <CardContent className="p-4">
+                    {/* Urgency signals row */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Eye className="h-3 w-3" />
+                        <span>{viewers} viewing</span>
+                      </div>
+                      {isHighDemand && topSkill && (
+                        <div className="flex items-center gap-1 text-xs text-gold-600 dark:text-gold-400 font-semibold">
+                          <TrendingUp className="h-3 w-3" />
+                          {topSkill.name} requested {skillDemand}× this week
+                        </div>
+                      )}
+                    </div>
                     <div className="flex items-start gap-3">
                       <div className="relative">
                         <Avatar className="h-12 w-12">
                           {peer.avatar_url ? (
                             <img src={peer.avatar_url} alt={peer.name} className="h-full w-full object-cover rounded-full" />
                           ) : (
-                            <AvatarFallback className="bg-amber-100 text-amber-700 font-semibold">
+                            <AvatarFallback className="bg-gold-100 text-navy-800 font-semibold">
                               {initials}
                             </AvatarFallback>
                           )}
@@ -173,7 +204,7 @@ export default function SearchPage() {
                           </Link>
                           {peer.rating > 0 && (
                             <div className="flex items-center gap-1 text-xs shrink-0">
-                              <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
+                              <Star className="h-3 w-3 text-gold-500 fill-gold-500" />
                               {peer.rating.toFixed(1)}
                             </div>
                           )}
@@ -191,11 +222,11 @@ export default function SearchPage() {
                       {peer.skills_to_teach.length > 0 && (
                         <div>
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
-                            <GraduationCap className="h-3 w-3 text-green-600" /> Can teach
+                            <GraduationCap className="h-3 w-3 text-emerald-600" /> Can teach
                           </p>
                           <div className="flex flex-wrap gap-1">
                             {peer.skills_to_teach.slice(0, 3).map((s) => (
-                              <Badge key={s.name} className="text-[10px] bg-green-50 text-green-700 dark:bg-green-500/20 dark:text-green-400">
+                              <Badge key={s.name} className="text-[10px] bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
                                 {s.name}
                               </Badge>
                             ))}
@@ -208,11 +239,11 @@ export default function SearchPage() {
                       {peer.skills_to_learn.length > 0 && (
                         <div>
                           <p className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
-                            <BookOpen className="h-3 w-3 text-blue-600" /> Wants to learn
+                            <BookOpen className="h-3 w-3 text-sky-600" /> Wants to learn
                           </p>
                           <div className="flex flex-wrap gap-1">
                             {peer.skills_to_learn.slice(0, 3).map((s) => (
-                              <Badge key={s.name} className="text-[10px] bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400">
+                              <Badge key={s.name} className="text-[10px] bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400">
                                 {s.name}
                               </Badge>
                             ))}
@@ -232,7 +263,7 @@ export default function SearchPage() {
                         </Button>
                       </Link>
                       <Link href={`/profile/${peer.id}`} className="flex-1">
-                        <Button size="sm" className="w-full text-xs gap-1 bg-amber-500 hover:bg-amber-600 text-white">
+                        <Button size="sm" className="w-full text-xs gap-1">
                           <Calendar className="h-3 w-3" /> View Profile
                         </Button>
                       </Link>

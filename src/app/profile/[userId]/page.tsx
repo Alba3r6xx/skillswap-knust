@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { getProfileById, getSessionsByUser, getTimeSinceLastSeen, computeBadges, createSession, createNotification } from "@/lib/data";
-import { Profile, Badge as BadgeType } from "@/lib/types";
+import { Profile, Badge as BadgeType, Session } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getViewerCount, getAvailableSlots, getSkillRequestCount } from "@/lib/gamification";
 
 export default function PublicProfilePage() {
   const { user: currentUser, isLoading } = useAuth();
@@ -38,6 +39,7 @@ export default function PublicProfilePage() {
   const [profileUser, setProfileUser] = useState<Profile | null>(null);
   const [badges, setBadges] = useState<BadgeType[]>([]);
   const [sessionCount, setSessionCount] = useState(0);
+  const [profileSessions, setProfileSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [showBookDialog, setShowBookDialog] = useState(false);
   const [bookSkill, setBookSkill] = useState("");
@@ -64,6 +66,7 @@ export default function PublicProfilePage() {
           const sessions = await getSessionsByUser(userId);
           setBadges(computeBadges(sessions, userId));
           setSessionCount(sessions.filter((s) => s.status === "completed").length);
+          setProfileSessions(sessions);
         }
         setLoading(false);
       };
@@ -73,7 +76,7 @@ export default function PublicProfilePage() {
 
   if (isLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-background p-6">
+      <div className="bg-background p-6">
         <div className="container mx-auto max-w-2xl space-y-4">
           <Skeleton className="h-8 w-24" />
           <Skeleton className="h-48" />
@@ -90,7 +93,7 @@ export default function PublicProfilePage() {
 
   if (!profileUser) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-background flex items-center justify-center">
+      <div className="bg-background flex items-center justify-center min-h-dvh">
         <div className="text-center">
           <p className="text-lg font-semibold mb-2">User not found</p>
           <Button variant="outline" onClick={() => router.back()}>
@@ -104,13 +107,43 @@ export default function PublicProfilePage() {
   const initials = profileUser.name.split(" ").map((n) => n[0]).join("").toUpperCase();
   const lastSeen = getTimeSinceLastSeen(profileUser.last_seen);
   const isOnline = lastSeen === "Online now";
+  const viewerCount = getViewerCount(profileUser.id);
+  const availableSlots = getAvailableSlots(profileSessions, profileUser.id);
+  const topSkill = profileUser.skills_to_teach[0];
+  const skillDemand = topSkill ? getSkillRequestCount(topSkill.name) : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
+    <div className="bg-background min-h-dvh">
+      <div className="container mx-auto px-4 py-6 max-w-3xl">
         <Button variant="ghost" size="sm" className="mb-4" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4 mr-1" /> Back
         </Button>
+
+        {/* Urgency + social proof bar */}
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500" />
+            </span>
+            {viewerCount} people viewing now
+          </div>
+          {availableSlots <= 2 && availableSlots > 0 && (
+            <span className="text-xs font-semibold text-red-600 bg-red-50 dark:bg-red-500/10 px-2 py-0.5 rounded-full">
+              ⚠️ Only {availableSlots} slot{availableSlots > 1 ? "s" : ""} left this week
+            </span>
+          )}
+          {availableSlots === 0 && (
+            <span className="text-xs font-semibold text-red-600 bg-red-50 dark:bg-red-500/10 px-2 py-0.5 rounded-full">
+              🔴 Fully booked this week
+            </span>
+          )}
+          {skillDemand >= 8 && topSkill && (
+            <span className="text-xs font-semibold text-gold-700 bg-gold-50 dark:bg-gold-500/10 px-2 py-0.5 rounded-full">
+              🔥 {topSkill.name} requested {skillDemand}× this week
+            </span>
+          )}
+        </div>
 
         {/* Profile Header */}
         <Card className="mb-6">
@@ -121,7 +154,7 @@ export default function PublicProfilePage() {
                   {profileUser.avatar_url ? (
                     <img src={profileUser.avatar_url} alt={profileUser.name} className="h-full w-full object-cover rounded-full" />
                   ) : (
-                    <AvatarFallback className="bg-amber-100 text-amber-700 text-2xl font-semibold">
+                    <AvatarFallback className="bg-gold-100 text-navy-800 text-2xl font-black">
                       {initials}
                     </AvatarFallback>
                   )}
@@ -136,7 +169,7 @@ export default function PublicProfilePage() {
                 <div className="flex items-center gap-3 mt-2">
                   {profileUser.rating > 0 && (
                     <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+                      <Star className="h-4 w-4 text-gold-500 fill-gold-500" />
                       <span className="text-sm font-semibold">{profileUser.rating.toFixed(1)}</span>
                       <span className="text-xs text-muted-foreground">({profileUser.total_ratings})</span>
                     </div>
@@ -167,7 +200,7 @@ export default function PublicProfilePage() {
                 </Button>
               </Link>
               <Button
-                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white gap-2"
+                className="flex-1 gap-2"
                 onClick={() => setShowBookDialog(true)}
               >
                 <Calendar className="h-4 w-4" /> Book Session
@@ -181,7 +214,7 @@ export default function PublicProfilePage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <GraduationCap className="h-4 w-4 text-green-600" /> Can Teach
+                <GraduationCap className="h-4 w-4 text-primary" /> Can Teach
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -190,7 +223,7 @@ export default function PublicProfilePage() {
               ) : (
                 <div className="flex flex-wrap gap-1.5">
                   {profileUser.skills_to_teach.map((s) => (
-                    <Badge key={s.name} className="bg-green-50 text-green-700 dark:bg-green-500/20 dark:text-green-400">
+                    <Badge key={s.name} className="bg-gold-50 text-navy-800 dark:bg-gold-500/20 dark:text-gold-300">
                       {s.name} <span className="ml-1 opacity-60">({s.level})</span>
                     </Badge>
                   ))}
@@ -203,7 +236,7 @@ export default function PublicProfilePage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-blue-600" /> Wants to Learn
+                <BookOpen className="h-4 w-4 text-sky-500" /> Wants to Learn
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -212,7 +245,7 @@ export default function PublicProfilePage() {
               ) : (
                 <div className="flex flex-wrap gap-1.5">
                   {profileUser.skills_to_learn.map((s) => (
-                    <Badge key={s.name} className="bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400">
+                    <Badge key={s.name} className="bg-sky-50 text-navy-800 dark:bg-sky-500/20 dark:text-sky-300">
                       {s.name} <span className="ml-1 opacity-60">({s.level})</span>
                     </Badge>
                   ))}
@@ -225,7 +258,7 @@ export default function PublicProfilePage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <Clock className="h-4 w-4 text-amber-600" /> Availability
+                <Clock className="h-4 w-4 text-gold-600" /> Availability
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -252,7 +285,7 @@ export default function PublicProfilePage() {
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {badges.map((b) => (
-                    <div key={b.id} className="flex items-center gap-1.5 px-2 py-1 rounded-lg border bg-white dark:bg-muted/50" title={b.description}>
+                    <div key={b.id} className="flex items-center gap-1.5 px-2 py-1 rounded-lg border bg-card dark:bg-muted/50" title={b.description}>
                       <span className="text-base">{b.icon}</span>
                       <span className="text-xs font-medium">{b.name}</span>
                     </div>
@@ -342,8 +375,8 @@ export default function PublicProfilePage() {
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setShowBookDialog(false)}>Cancel</Button>
             <Button
-              className="bg-amber-500 hover:bg-amber-600 text-white"
-              disabled={!bookSkill || !bookDate || !bookTime || bookingInProgress}
+              loading={bookingInProgress}
+              disabled={!bookSkill || !bookDate || !bookTime}
               onClick={async () => {
                 if (!currentUser || !profileUser) return;
                 setBookingInProgress(true);
@@ -383,7 +416,7 @@ export default function PublicProfilePage() {
                 setBookingInProgress(false);
               }}
             >
-              {bookingInProgress ? "Sending..." : "Send Request"}
+              Send Request
             </Button>
           </DialogFooter>
         </DialogContent>

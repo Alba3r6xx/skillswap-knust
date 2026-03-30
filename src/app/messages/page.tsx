@@ -49,12 +49,12 @@ interface Conversation {
 function ReadReceipt({ msg, isMine }: { msg: Message; isMine: boolean }) {
   if (!isMine) return null;
   if (msg.read) {
-    return <CheckCheck className="h-3.5 w-3.5 text-blue-400 inline-block ml-1 shrink-0" />;
+    return <CheckCheck className="h-3.5 w-3.5 text-sky-500 inline-block ml-1 shrink-0" />;
   }
   if (msg.delivered) {
-    return <CheckCheck className="h-3.5 w-3.5 text-gray-300 inline-block ml-1 shrink-0" />;
+    return <CheckCheck className="h-3.5 w-3.5 text-navy-300 dark:text-navy-500 inline-block ml-1 shrink-0" />;
   }
-  return <Check className="h-3 w-3 text-amber-200 inline-block ml-1 shrink-0" />;
+  return <Check className="h-3 w-3 text-gold-300 inline-block ml-1 shrink-0" />;
 }
 
 function VoiceMessage({ src, isMine }: { src: string; isMine: boolean }) {
@@ -200,7 +200,7 @@ function VoiceMessage({ src, isMine }: { src: string; isMine: boolean }) {
         className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 active:scale-95 ${
           isMine
             ? "bg-white/20 hover:bg-white/30"
-            : "bg-amber-500 hover:bg-amber-600 shadow-sm"
+            : "bg-primary hover:brightness-105 shadow-sm"
         }`}
       >
         {playing
@@ -224,7 +224,7 @@ function VoiceMessage({ src, isMine }: { src: string; isMine: boolean }) {
 
 export default function MessagesPage() {
   return (
-    <Suspense fallback={<div className="h-[100dvh] flex items-center justify-center"><div className="animate-pulse text-amber-500">Loading...</div></div>}>
+    <Suspense fallback={<div className="h-[100dvh] flex items-center justify-center"><div className="animate-pulse text-primary">Loading...</div></div>}>
       <MessagesContent />
     </Suspense>
   );
@@ -852,7 +852,7 @@ function MessagesContent() {
 
   if (isLoading || !user) {
     return (
-      <div className="bg-gray-50 dark:bg-background p-6">
+      <div className="bg-background p-6">
         <Skeleton className="h-96 w-full max-w-4xl mx-auto" />
       </div>
     );
@@ -861,7 +861,7 @@ function MessagesContent() {
   const selectedPeer = selectedPeerId ? peerProfiles[selectedPeerId] : null;
 
   return (
-    <div className="bg-gray-50 dark:bg-background flex flex-col overflow-hidden" style={{ height: 'calc(100dvh - 3.25rem - env(safe-area-inset-top))' }}>
+    <div className="bg-background flex flex-col overflow-hidden" style={{ height: 'calc(100dvh - 3.25rem - env(safe-area-inset-top))' }}>
       {/* Header - only show on conversation list view or desktop */}
       <div className={`${selectedPeerId ? "hidden md:block" : "block"} px-4 pt-4 pb-2 md:pt-6 md:pb-4 max-w-4xl mx-auto w-full`}>
         <h1 className="text-2xl font-bold">Messages</h1>
@@ -884,7 +884,7 @@ function MessagesContent() {
                   <MessageSquare className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                   <p className="text-sm text-muted-foreground">No messages yet</p>
                   <Link href="/search">
-                    <Button size="sm" className="mt-2 bg-amber-500 hover:bg-amber-600 text-white">
+                    <Button size="sm" className="mt-2">
                       Find Peers
                     </Button>
                   </Link>
@@ -893,8 +893,8 @@ function MessagesContent() {
                 <>
                   {initialPeer && !conversations.some((c) => c.peerId === initialPeer) && peerProfiles[initialPeer] && (
                     <button
-                      className={`flex items-center gap-3 w-full p-3 border-b hover:bg-gray-50 dark:hover:bg-muted transition-colors text-left ${
-                        selectedPeerId === initialPeer ? "bg-amber-50 dark:bg-amber-500/10" : ""
+                      className={`flex items-center gap-3 w-full p-3 border-b hover:bg-navy-50 dark:hover:bg-muted transition-colors text-left ${
+                        selectedPeerId === initialPeer ? "bg-gold-50 dark:bg-gold-500/10" : ""
                       }`}
                       onClick={() => setSelectedPeerId(initialPeer)}
                     >
@@ -902,7 +902,7 @@ function MessagesContent() {
                         {peerProfiles[initialPeer].avatar_url ? (
                           <img src={peerProfiles[initialPeer].avatar_url} alt="" className="h-full w-full object-cover rounded-full" />
                         ) : (
-                          <AvatarFallback className="bg-amber-100 text-amber-700 text-sm font-semibold">
+                          <AvatarFallback className="bg-gold-100 text-navy-800 text-sm font-semibold">
                             {peerProfiles[initialPeer].name.split(" ").map((n) => n[0]).join("").toUpperCase()}
                           </AvatarFallback>
                         )}
@@ -922,8 +922,8 @@ function MessagesContent() {
                     return (
                       <button
                         key={conv.peerId}
-                        className={`flex items-center gap-3 w-full p-3 border-b hover:bg-gray-50 dark:hover:bg-muted transition-colors text-left ${
-                          isActive ? "bg-amber-50 dark:bg-amber-500/10" : ""
+                        className={`flex items-center gap-3 w-full p-3 border-b hover:bg-navy-50 dark:hover:bg-muted transition-colors text-left ${
+                          isActive ? "bg-gold-50 dark:bg-gold-500/10" : ""
                         }`}
                         onClick={() => setSelectedPeerId(conv.peerId)}
                       >
@@ -931,7 +931,7 @@ function MessagesContent() {
                           {peer.avatar_url ? (
                             <img src={peer.avatar_url} alt={peer.name} className="h-full w-full object-cover rounded-full" />
                           ) : (
-                            <AvatarFallback className="bg-amber-100 text-amber-700 text-sm font-semibold">
+                            <AvatarFallback className="bg-gold-100 text-navy-800 text-sm font-semibold">
                               {initials}
                             </AvatarFallback>
                           )}
@@ -947,9 +947,9 @@ function MessagesContent() {
                             <p className="text-xs text-muted-foreground truncate flex items-center">
                               {isMineLastMsg && (
                                 conv.lastMessage.read
-                                  ? <CheckCheck className="h-3 w-3 text-blue-500 mr-1 shrink-0" />
+                                  ? <CheckCheck className="h-3 w-3 text-sky-500 mr-1 shrink-0" />
                                   : conv.lastMessage.delivered
-                                    ? <CheckCheck className="h-3 w-3 text-gray-400 mr-1 shrink-0" />
+                                    ? <CheckCheck className="h-3 w-3 text-navy-400 mr-1 shrink-0" />
                                     : <Check className="h-3 w-3 text-muted-foreground mr-1 shrink-0" />
                               )}
                               {conv.lastMessage.type === "audio" ? (
@@ -961,7 +961,7 @@ function MessagesContent() {
                               ) : conv.lastMessage.content}
                             </p>
                             {conv.unreadCount > 0 && (
-                              <Badge className="bg-amber-500 text-white text-[10px] h-5 w-5 flex items-center justify-center rounded-full p-0 shrink-0">
+                              <Badge className="bg-primary text-white text-[10px] h-5 w-5 flex items-center justify-center rounded-full p-0 shrink-0">
                                 {conv.unreadCount}
                               </Badge>
                             )}
@@ -1003,7 +1003,7 @@ function MessagesContent() {
                           {selectedPeer.avatar_url ? (
                             <img src={selectedPeer.avatar_url} alt={selectedPeer.name} className="h-full w-full object-cover rounded-full" />
                           ) : (
-                            <AvatarFallback className="bg-amber-100 text-amber-700 text-sm">
+                            <AvatarFallback className="bg-gold-100 text-navy-800 text-sm">
                               {selectedPeer.name.split(" ").map((n) => n[0]).join("").toUpperCase()}
                             </AvatarFallback>
                           )}
@@ -1015,7 +1015,7 @@ function MessagesContent() {
                       <div className="min-w-0">
                         <p className="text-sm font-semibold truncate">{selectedPeer.name}</p>
                         {peerTyping ? (
-                          <p className="text-xs text-green-600 dark:text-green-400 animate-pulse">typing...</p>
+                          <p className="text-xs text-emerald-600 dark:text-emerald-400 animate-pulse">typing...</p>
                         ) : (
                           <p className="text-xs text-muted-foreground truncate">{getTimeSinceLastSeen(selectedPeer.last_seen)}</p>
                         )}
@@ -1023,7 +1023,7 @@ function MessagesContent() {
                     </Link>
                   )}
                   <button
-                    className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center justify-center shrink-0"
+                    className="h-8 w-8 rounded-full hover:bg-navy-50 dark:hover:bg-navy-900/40 flex items-center justify-center shrink-0"
                     onClick={() => { setSearchOpen(!searchOpen); setSearchQuery(""); setSearchResults([]); }}
                   >
                     <Search className="h-4 w-4 text-muted-foreground" />
@@ -1040,7 +1040,7 @@ function MessagesContent() {
                         placeholder="Search messages..."
                         value={searchQuery}
                         onChange={(e) => handleSearchMessages(e.target.value)}
-                        className="w-full h-8 pl-9 pr-8 rounded-lg bg-gray-100 dark:bg-zinc-800 text-sm outline-none focus:ring-2 focus:ring-amber-500/30"
+                        className="w-full h-8 pl-9 pr-8 rounded-lg bg-navy-50 dark:bg-zinc-800 text-sm outline-none focus:ring-2 focus:ring-primary/30"
                         autoFocus
                       />
                       <button className="absolute right-2 top-1/2 -translate-y-1/2" onClick={() => { setSearchOpen(false); setSearchQuery(""); setSearchResults([]); }}>
@@ -1052,7 +1052,7 @@ function MessagesContent() {
                         {searchResults.map((r) => (
                           <button
                             key={r.id}
-                            className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 text-xs"
+                            className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-navy-50 dark:hover:bg-zinc-800 text-xs"
                             onClick={() => {
                               const el = document.getElementById(`msg-${r.id}`);
                               el?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1073,14 +1073,14 @@ function MessagesContent() {
                 {pinnedMessages.length > 0 && (
                   <button
                     type="button"
-                    className="flex items-center gap-2 w-full px-3 py-1.5 border-b bg-amber-50/80 dark:bg-amber-500/5 shrink-0 text-left hover:bg-amber-100/60 dark:hover:bg-amber-500/10 transition-colors"
+                    className="flex items-center gap-2 w-full px-3 py-1.5 border-b bg-gold-50/80 dark:bg-gold-500/5 shrink-0 text-left hover:bg-gold-100/60 dark:hover:bg-gold-500/10 transition-colors"
                     onClick={() => {
                       const el = document.getElementById(`msg-${pinnedMessages[pinnedMessages.length - 1].id}`);
                       el?.scrollIntoView({ behavior: "smooth", block: "center" });
                     }}
                   >
-                    <Pin className="h-3 w-3 text-amber-600 shrink-0" />
-                    <span className="text-xs font-medium text-amber-700 dark:text-amber-400 shrink-0">Pinned</span>
+                    <Pin className="h-3 w-3 text-gold-600 shrink-0" />
+                    <span className="text-xs font-medium text-gold-700 dark:text-gold-400 shrink-0">Pinned</span>
                     <span className="text-xs truncate text-muted-foreground flex-1 min-w-0">
                       {pinnedMessages[pinnedMessages.length - 1].type === "audio" ? "🎤 Voice note"
                         : pinnedMessages[pinnedMessages.length - 1].type === "image" ? "📷 Photo"
@@ -1096,11 +1096,11 @@ function MessagesContent() {
                 )}
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-3 min-h-0 bg-amber-50/30 dark:bg-zinc-950/50" onClick={() => setContextMenu(null)}>
+                <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-3 min-h-0 bg-navy-50/30 dark:bg-zinc-950/50" onClick={() => setContextMenu(null)}>
                   {messages.length === 0 && (
                     <div className="text-center py-20">
-                      <div className="h-14 w-14 mx-auto mb-3 rounded-full bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center">
-                        <MessageSquare className="h-6 w-6 text-amber-500" />
+                      <div className="h-14 w-14 mx-auto mb-3 rounded-full bg-gold-100 dark:bg-gold-500/10 flex items-center justify-center">
+                        <MessageSquare className="h-6 w-6 text-primary" />
                       </div>
                       <p className="text-sm font-medium text-muted-foreground">No messages yet</p>
                       <p className="text-xs text-muted-foreground/50 mt-1">Say hello to start the conversation</p>
@@ -1158,10 +1158,10 @@ function MessagesContent() {
                                   : "px-3 py-1.5"
                               } ${
                                 isMine
-                                  ? `${isDeleted ? "bg-amber-200/50 dark:bg-amber-900/20" : "bg-gradient-to-br from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700"} text-white shadow-sm ${
+                                  ? `${isDeleted ? "bg-gold-200/50 dark:bg-gold-900/20" : "bg-gradient-to-br from-gold-500 to-gold-600 dark:from-gold-600 dark:to-gold-700"} text-white shadow-sm ${
                                       showTail ? "rounded-2xl rounded-tr-sm" : "rounded-2xl"
                                     }`
-                                  : `${isDeleted ? "bg-gray-100 dark:bg-zinc-800/50" : "bg-white dark:bg-zinc-800"} shadow-sm ${
+                                  : `${isDeleted ? "bg-navy-50 dark:bg-zinc-800/50" : "bg-card dark:bg-zinc-800"} shadow-sm ${
                                       showTail ? "rounded-2xl rounded-tl-sm" : "rounded-2xl"
                                     }`
                               }`}
@@ -1179,14 +1179,14 @@ function MessagesContent() {
                                   className={`w-full text-left mb-0.5 px-1.5 py-0.5 rounded border-l-2 ${
                                     isMine
                                       ? "bg-white/10 border-white/30 text-white/70"
-                                      : "bg-gray-50 dark:bg-zinc-700/40 border-amber-400 text-muted-foreground"
+                                      : "bg-navy-50 dark:bg-zinc-700/40 border-gold-400 text-muted-foreground"
                                   }`}
                                   onClick={() => {
                                     const el = document.getElementById(`msg-${msg.reply_to}`);
                                     el?.scrollIntoView({ behavior: "smooth", block: "center" });
                                   }}
                                 >
-                                  <p className={`font-semibold text-[10px] leading-tight ${isMine ? "text-white/90" : "text-amber-600 dark:text-amber-400"}`}>
+                                  <p className={`font-semibold text-[10px] leading-tight ${isMine ? "text-white/90" : "text-gold-600 dark:text-gold-400"}`}>
                                     {msg.reply_sender_id === user.id ? "You" : selectedPeer?.name?.split(" ")[0] || ""}
                                   </p>
                                   <p className="truncate text-[11px] leading-tight">{msg.reply_preview}</p>
@@ -1208,8 +1208,8 @@ function MessagesContent() {
                                 const ext = doc.name.split(".").pop()?.toUpperCase() || "FILE";
                                 return (
                                   <a href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group">
-                                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${isMine ? "bg-white/20" : "bg-amber-100 dark:bg-amber-500/20"}`}>
-                                      <FileText className={`h-5 w-5 ${isMine ? "text-white" : "text-amber-600 dark:text-amber-400"}`} />
+                                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${isMine ? "bg-white/20" : "bg-gold-100 dark:bg-gold-500/20"}`}>
+                                      <FileText className={`h-5 w-5 ${isMine ? "text-white" : "text-gold-600 dark:text-gold-400"}`} />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <p className={`text-sm font-medium truncate ${isMine ? "text-white" : ""}`}>{doc.name}</p>
@@ -1224,7 +1224,7 @@ function MessagesContent() {
                               <div className={`flex items-center justify-end gap-0.5 -mb-0.5 ${
                                 isImage ? "mt-0.5 px-1" : isAudio || isDoc ? "mt-0" : "mt-0.5"
                               } ${
-                                isMine ? "text-white/60" : "text-gray-400 dark:text-zinc-500"
+                                isMine ? "text-white/60" : "text-navy-400 dark:text-zinc-500"
                               }`}>
                                 {msg.pinned && !isDeleted && <Pin className="h-2 w-2 shrink-0" />}
                                 {isEdited && !isDeleted && <span className="text-[9px] leading-none mr-0.5">edited</span>}
@@ -1247,7 +1247,7 @@ function MessagesContent() {
                                   <button
                                     key={emoji}
                                     className={`inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full border transition-colors ${
-                                      byMe ? "bg-amber-100 dark:bg-amber-500/20 border-amber-300 dark:border-amber-500/40" : "bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-700"
+                                      byMe ? "bg-gold-100 dark:bg-gold-500/20 border-gold-300 dark:border-gold-500/40" : "bg-card dark:bg-zinc-800 border-border dark:border-zinc-700"
                                     }`}
                                     onClick={() => handleReaction(msg.id, emoji)}
                                   >
@@ -1268,13 +1268,13 @@ function MessagesContent() {
                 {/* Edit mode bar */}
                 {editingMsg && (
                   <div className="px-3 pt-2 pb-0 border-t shrink-0 bg-background">
-                    <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-500/5 rounded-xl px-3 py-2 border-l-2 border-blue-500">
-                      <Pencil className="h-4 w-4 text-blue-500 shrink-0" />
+                    <div className="flex items-center gap-2 bg-sky-50 dark:bg-sky-500/5 rounded-xl px-3 py-2 border-l-2 border-sky-500">
+                      <Pencil className="h-4 w-4 text-sky-500 shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-semibold text-blue-600 dark:text-blue-400">Editing message</p>
+                        <p className="text-[11px] font-semibold text-sky-600 dark:text-sky-400">Editing message</p>
                         <p className="text-xs text-muted-foreground truncate">{editingMsg.content}</p>
                       </div>
-                      <button className="h-6 w-6 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 flex items-center justify-center shrink-0" onClick={() => { setEditingMsg(null); setNewMessage(""); if (inputRef.current) inputRef.current.textContent = ""; }}>
+                      <button className="h-6 w-6 rounded-full hover:bg-navy-100 dark:hover:bg-zinc-700 flex items-center justify-center shrink-0" onClick={() => { setEditingMsg(null); setNewMessage(""); if (inputRef.current) inputRef.current.textContent = ""; }}>
                         <X className="h-3 w-3" />
                       </button>
                     </div>
@@ -1284,15 +1284,15 @@ function MessagesContent() {
                 {/* Reply preview */}
                 {replyTo && !editingMsg && (
                   <div className="px-3 pt-2 pb-0 border-t shrink-0 bg-background">
-                    <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-500/5 rounded-xl px-3 py-2 border-l-2 border-amber-500">
-                      <Reply className="h-4 w-4 text-amber-500 shrink-0 scale-x-[-1]" />
+                    <div className="flex items-center gap-2 bg-gold-50 dark:bg-gold-500/5 rounded-xl px-3 py-2 border-l-2 border-primary">
+                      <Reply className="h-4 w-4 text-primary shrink-0 scale-x-[-1]" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                        <p className="text-[11px] font-semibold text-gold-600 dark:text-gold-400">
                           {replyTo.sender_id === user.id ? "You" : selectedPeer?.name?.split(" ")[0] || ""}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">{getReplyPreview(replyTo)}</p>
                       </div>
-                      <button className="h-6 w-6 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 flex items-center justify-center shrink-0" onClick={() => setReplyTo(null)}>
+                      <button className="h-6 w-6 rounded-full hover:bg-navy-100 dark:hover:bg-zinc-700 flex items-center justify-center shrink-0" onClick={() => setReplyTo(null)}>
                         <X className="h-3 w-3" />
                       </button>
                     </div>
@@ -1313,9 +1313,9 @@ function MessagesContent() {
                         </button>
                       </div>
                     ) : docFile ? (
-                      <div className="flex items-center gap-3 bg-gray-100 dark:bg-zinc-800 rounded-xl px-3 py-2.5 max-w-xs">
-                        <div className="h-10 w-10 rounded-lg bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center shrink-0">
-                          <FileText className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      <div className="flex items-center gap-3 bg-navy-50 dark:bg-zinc-800 rounded-xl px-3 py-2.5 max-w-xs">
+                        <div className="h-10 w-10 rounded-lg bg-gold-100 dark:bg-gold-500/20 flex items-center justify-center shrink-0">
+                          <FileText className="h-5 w-5 text-gold-600 dark:text-gold-400" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{docFile.name}</p>
@@ -1342,11 +1342,11 @@ function MessagesContent() {
                     /* Image selected — send */
                     <div className="flex items-center gap-2">
                       <div className="flex-1 relative">
-                        <div className="min-h-[2.75rem] rounded-[22px] bg-gray-100 dark:bg-zinc-800 px-4 py-2.5 text-base text-gray-400 dark:text-zinc-500">
+                        <div className="min-h-[2.75rem] rounded-[22px] bg-navy-50 dark:bg-zinc-800 px-4 py-2.5 text-base text-muted-foreground dark:text-zinc-500">
                           Send photo...
                         </div>
                       </div>
-                      <button type="button" disabled={sending} className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50" onClick={sendImage}>
+                      <button type="button" disabled={sending} className="h-10 w-10 rounded-full bg-primary hover:brightness-105 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50" onClick={sendImage}>
                         {sending ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="h-4 w-4" />}
                       </button>
                     </div>
@@ -1354,24 +1354,24 @@ function MessagesContent() {
                     /* Document selected — send */
                     <div className="flex items-center gap-2">
                       <div className="flex-1 relative">
-                        <div className="min-h-[2.75rem] rounded-[22px] bg-gray-100 dark:bg-zinc-800 px-4 py-2.5 text-base text-gray-400 dark:text-zinc-500">
+                        <div className="min-h-[2.75rem] rounded-[22px] bg-navy-50 dark:bg-zinc-800 px-4 py-2.5 text-base text-muted-foreground dark:text-zinc-500">
                           Send document...
                         </div>
                       </div>
-                      <button type="button" disabled={sending} className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50" onClick={sendDoc}>
+                      <button type="button" disabled={sending} className="h-10 w-10 rounded-full bg-primary hover:brightness-105 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50" onClick={sendDoc}>
                         {sending ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="h-4 w-4" />}
                       </button>
                     </div>
                   ) : audioPreview ? (
                     /* Voice note preview */
-                    <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 rounded-full px-2 py-1.5">
+                    <div className="flex items-center gap-2 bg-gold-50 dark:bg-gold-900/20 rounded-full px-2 py-1.5">
                       <button className="h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-red-500 hover:bg-red-100 dark:hover:bg-red-500/10" onClick={discardVoiceNote}>
                         <X className="h-4 w-4" />
                       </button>
                       <div className="flex-1 min-w-0">
                         <audio controls src={audioPreview} className="w-full h-8" style={{ filter: "sepia(20%) saturate(70%) grayscale(1) contrast(99%) invert(12%)" }} />
                       </div>
-                      <button disabled={sending} className="h-9 w-9 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50" onClick={sendVoiceNote}>
+                      <button disabled={sending} className="h-9 w-9 rounded-full bg-primary hover:brightness-105 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50" onClick={sendVoiceNote}>
                         {sending ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="h-4 w-4" />}
                       </button>
                     </div>
@@ -1394,15 +1394,15 @@ function MessagesContent() {
                   ) : (
                     /* Normal text input */
                     <div className="flex items-center gap-1.5">
-                      <button type="button" className="h-9 w-9 rounded-full text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 shrink-0 flex items-center justify-center active:scale-95" onClick={() => imageInputRef.current?.click()}>
+                      <button type="button" className="h-9 w-9 rounded-full text-muted-foreground hover:bg-navy-50 dark:hover:bg-zinc-800 shrink-0 flex items-center justify-center active:scale-95" onClick={() => imageInputRef.current?.click()}>
                         <ImagePlus className="h-5 w-5" />
                       </button>
-                      <button type="button" className="h-9 w-9 rounded-full text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 shrink-0 flex items-center justify-center active:scale-95" onClick={() => docInputRef.current?.click()}>
+                      <button type="button" className="h-9 w-9 rounded-full text-muted-foreground hover:bg-navy-50 dark:hover:bg-zinc-800 shrink-0 flex items-center justify-center active:scale-95" onClick={() => docInputRef.current?.click()}>
                         <Paperclip className="h-5 w-5" />
                       </button>
                       <div className="flex-1 relative">
                         {!newMessage && (
-                          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500 pointer-events-none text-base select-none">
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-zinc-500 pointer-events-none text-base select-none">
                             Message
                           </div>
                         )}
@@ -1427,16 +1427,16 @@ function MessagesContent() {
                             const text = e.clipboardData.getData("text/plain");
                             document.execCommand("insertText", false, text);
                           }}
-                          className="min-h-[2.75rem] max-h-24 rounded-[22px] bg-gray-100 dark:bg-zinc-800 px-4 py-2.5 text-base outline-none overflow-y-auto break-words whitespace-pre-wrap focus:ring-2 focus:ring-amber-500/30"
+                          className="min-h-[2.75rem] max-h-24 rounded-[22px] bg-navy-50 dark:bg-zinc-800 px-4 py-2.5 text-base outline-none overflow-y-auto break-words whitespace-pre-wrap focus:ring-2 focus:ring-primary/30"
                           style={{ WebkitUserSelect: "text", userSelect: "text" }}
                         />
                       </div>
                       {newMessage.trim() ? (
-                        <button type="button" disabled={sending} className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50" onClick={handleSend}>
+                        <button type="button" disabled={sending} className="h-10 w-10 rounded-full bg-primary hover:brightness-105 text-white shrink-0 flex items-center justify-center active:scale-95 disabled:opacity-50" onClick={handleSend}>
                           <Send className="h-4 w-4" />
                         </button>
                       ) : (
-                        <button type="button" className="h-10 w-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white shrink-0 flex items-center justify-center active:scale-95" onClick={startRecording}>
+                        <button type="button" className="h-10 w-10 rounded-full bg-primary hover:brightness-105 text-white shrink-0 flex items-center justify-center active:scale-95" onClick={startRecording}>
                           <Mic className="h-4 w-4" />
                         </button>
                       )}
@@ -1469,7 +1469,7 @@ function MessagesContent() {
               {QUICK_REACTIONS.map(emoji => (
                 <button
                   key={emoji}
-                  className="h-9 w-9 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center justify-center text-xl active:scale-125 transition-transform"
+                  className="h-9 w-9 rounded-full hover:bg-navy-50 dark:hover:bg-zinc-700 flex items-center justify-center text-xl active:scale-125 transition-transform"
                   onClick={() => handleReaction(contextMenu.msg.id, emoji)}
                 >
                   {emoji}
@@ -1477,23 +1477,23 @@ function MessagesContent() {
               ))}
             </div>
             <div className="py-1">
-              <button className="flex items-center gap-3 w-full px-3.5 py-2.5 text-[13px] hover:bg-gray-100 dark:hover:bg-zinc-700 text-left active:bg-gray-200 dark:active:bg-zinc-600" onClick={() => handleReply(contextMenu.msg)}>
+              <button className="flex items-center gap-3 w-full px-3.5 py-2.5 text-[13px] hover:bg-navy-50 dark:hover:bg-zinc-700 text-left active:bg-navy-100 dark:active:bg-zinc-600" onClick={() => handleReply(contextMenu.msg)}>
                 <Reply className="h-4 w-4 text-muted-foreground" /> Reply
               </button>
-              <button className="flex items-center gap-3 w-full px-3.5 py-2.5 text-[13px] hover:bg-gray-100 dark:hover:bg-zinc-700 text-left active:bg-gray-200 dark:active:bg-zinc-600" onClick={() => handleForwardSelect(contextMenu.msg)}>
+              <button className="flex items-center gap-3 w-full px-3.5 py-2.5 text-[13px] hover:bg-navy-50 dark:hover:bg-zinc-700 text-left active:bg-navy-100 dark:active:bg-zinc-600" onClick={() => handleForwardSelect(contextMenu.msg)}>
                 <Forward className="h-4 w-4 text-muted-foreground" /> Forward
               </button>
               {contextMenu.msg.type === "text" && (
-                <button className="flex items-center gap-3 w-full px-3.5 py-2.5 text-[13px] hover:bg-gray-100 dark:hover:bg-zinc-700 text-left active:bg-gray-200 dark:active:bg-zinc-600" onClick={() => handleCopy(contextMenu.msg)}>
+                <button className="flex items-center gap-3 w-full px-3.5 py-2.5 text-[13px] hover:bg-navy-50 dark:hover:bg-zinc-700 text-left active:bg-navy-100 dark:active:bg-zinc-600" onClick={() => handleCopy(contextMenu.msg)}>
                   <Copy className="h-4 w-4 text-muted-foreground" /> Copy
                 </button>
               )}
               {contextMenu.msg.sender_id === user?.id && contextMenu.msg.type === "text" && !contextMenu.msg.deleted_at && (
-                <button className="flex items-center gap-3 w-full px-3.5 py-2.5 text-[13px] hover:bg-gray-100 dark:hover:bg-zinc-700 text-left active:bg-gray-200 dark:active:bg-zinc-600" onClick={() => handleEdit(contextMenu.msg)}>
+                <button className="flex items-center gap-3 w-full px-3.5 py-2.5 text-[13px] hover:bg-navy-50 dark:hover:bg-zinc-700 text-left active:bg-navy-100 dark:active:bg-zinc-600" onClick={() => handleEdit(contextMenu.msg)}>
                   <Pencil className="h-4 w-4 text-muted-foreground" /> Edit
                 </button>
               )}
-              <button className="flex items-center gap-3 w-full px-3.5 py-2.5 text-[13px] hover:bg-gray-100 dark:hover:bg-zinc-700 text-left active:bg-gray-200 dark:active:bg-zinc-600" onClick={() => handlePin(contextMenu.msg)}>
+              <button className="flex items-center gap-3 w-full px-3.5 py-2.5 text-[13px] hover:bg-navy-50 dark:hover:bg-zinc-700 text-left active:bg-navy-100 dark:active:bg-zinc-600" onClick={() => handlePin(contextMenu.msg)}>
                 {contextMenu.msg.pinned ? <PinOff className="h-4 w-4 text-muted-foreground" /> : <Pin className="h-4 w-4 text-muted-foreground" />}
                 {contextMenu.msg.pinned ? "Unpin" : "Pin"}
               </button>
@@ -1519,7 +1519,7 @@ function MessagesContent() {
           >
             <div className="px-4 py-3 border-b flex items-center justify-between shrink-0">
               <h3 className="font-semibold text-sm">Forward to...</h3>
-              <button className="h-7 w-7 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 flex items-center justify-center" onClick={() => setForwardMsg(null)}>
+              <button className="h-7 w-7 rounded-full hover:bg-navy-50 dark:hover:bg-zinc-800 flex items-center justify-center" onClick={() => setForwardMsg(null)}>
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1531,14 +1531,14 @@ function MessagesContent() {
                 return (
                   <button
                     key={conv.peerId}
-                    className="flex items-center gap-3 w-full p-3 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors text-left active:bg-gray-100 dark:active:bg-zinc-700"
+                    className="flex items-center gap-3 w-full p-3 hover:bg-navy-50 dark:hover:bg-zinc-800 transition-colors text-left active:bg-navy-100 dark:active:bg-zinc-700"
                     onClick={() => handleForwardTo(conv.peerId)}
                   >
                     <Avatar className="h-10 w-10 shrink-0">
                       {peer.avatar_url ? (
                         <img src={peer.avatar_url} alt={peer.name} className="h-full w-full object-cover rounded-full" />
                       ) : (
-                        <AvatarFallback className="bg-amber-100 text-amber-700 text-sm font-semibold">{initials}</AvatarFallback>
+                        <AvatarFallback className="bg-gold-100 text-navy-800 text-sm font-semibold">{initials}</AvatarFallback>
                       )}
                     </Avatar>
                     <div className="min-w-0">

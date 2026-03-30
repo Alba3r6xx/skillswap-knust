@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Swap Request — SkillSwap KNUST</title>
+  <style>
+    body { margin: 0; padding: 0; background: #f8fafc; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .wrapper { max-width: 560px; margin: 40px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.07); }
+    .header { background: linear-gradient(135deg, #0f2b4c 0%, #1a4a75 100%); padding: 32px 40px; text-align: center; }
+    .logo { display: inline-flex; align-items: center; gap: 10px; }
+    .logo-icon { background: #f59e0b; width: 36px; height: 36px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; }
+    .logo-text { color: #ffffff; font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+    .body { padding: 40px; }
+    .greeting { font-size: 22px; font-weight: 700; color: #0f2b4c; margin: 0 0 8px; }
+    .subtext { font-size: 15px; color: #64748b; line-height: 1.6; margin: 0 0 28px; }
+    .request-card { background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 24px; margin-bottom: 28px; }
+    .request-card .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #92400e; margin-bottom: 4px; }
+    .request-card .value { font-size: 15px; font-weight: 600; color: #0f2b4c; }
+    .request-card .meta { font-size: 13px; color: #64748b; margin-top: 3px; }
+    .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    .detail-item .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin-bottom: 3px; }
+    .detail-item .value { font-size: 14px; font-weight: 500; color: #1e293b; }
+    .cta-section { text-align: center; margin: 0 0 32px; }
+    .cta-btn { display: inline-block; background: #f59e0b; color: #ffffff; font-size: 15px; font-weight: 600; padding: 14px 36px; border-radius: 100px; text-decoration: none; letter-spacing: -0.1px; }
+    .cta-btn:hover { background: #d97706; }
+    .secondary-btn { display: inline-block; color: #64748b; font-size: 13px; text-decoration: none; margin-top: 12px; }
+    .divider { border: none; border-top: 1px solid #f1f5f9; margin: 0 0 28px; }
+    .xp-pill { display: inline-flex; align-items: center; gap: 6px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 100px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: #92400e; margin-bottom: 28px; }
+    .footer { background: #f8fafc; border-top: 1px solid #f1f5f9; padding: 24px 40px; text-align: center; }
+    .footer p { font-size: 12px; color: #94a3b8; margin: 4px 0; line-height: 1.6; }
+    .footer a { color: #64748b; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">⚡</div>
+        <span class="logo-text">SkillSwap KNUST</span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="body">
+      <h1 class="greeting">You have a new swap request! 🎯</h1>
+      <p class="subtext">
+        <strong>{{requester_name}}</strong> wants to book a skill session with you.
+        Review and accept or decline — requests expire after 72 hours.
+      </p>
+
+      <!-- Request card -->
+      <div class="request-card">
+        <div class="label">Skill Requested</div>
+        <div class="value">{{skill_name}}</div>
+        <div class="meta">Requested by {{requester_name}} · {{requester_faculty}}</div>
+        <div class="details-grid">
+          <div class="detail-item">
+            <div class="label">Date</div>
+            <div class="value">{{session_date}}</div>
+          </div>
+          <div class="detail-item">
+            <div class="label">Time</div>
+            <div class="value">{{session_time}}</div>
+          </div>
+          <div class="detail-item">
+            <div class="label">Mode</div>
+            <div class="value">{{session_mode}}</div>
+          </div>
+          <div class="detail-item">
+            <div class="label">Role</div>
+            <div class="value">You as Teacher</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- XP pill -->
+      <div style="text-align: center;">
+        <div class="xp-pill">⭐ +75 XP for accepting and completing this session</div>
+      </div>
+
+      <!-- CTA -->
+      <div class="cta-section">
+        <a href="{{sessions_url}}" class="cta-btn">Review Request →</a>
+        <br />
+        <a href="{{sessions_url}}" class="secondary-btn">Or decline this request</a>
+      </div>
+
+      <hr class="divider" />
+
+      <p style="font-size: 13px; color: #64748b; line-height: 1.7; margin: 0;">
+        <strong>About {{requester_name}}:</strong> {{requester_bio}}<br />
+        Faculty: {{requester_faculty}} · Rating: {{requester_rating}} ⭐
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>You're receiving this because you're a member of SkillSwap KNUST.</p>
+      <p><a href="{{unsubscribe_url}}">Manage notifications</a> · <a href="{{app_url}}">Open App</a></p>
+      <p style="margin-top: 12px;">© 2026 SkillSwap KNUST · KNUST Campus, Kumasi, Ghana</p>
+    </div>
+  </div>
+</body>
+</html>
