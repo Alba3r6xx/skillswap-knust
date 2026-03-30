@@ -75,11 +75,12 @@ export default function BottomNav() {
       aria-label="Mobile navigation"
       className={cn(
         "md:hidden fixed bottom-0 left-0 right-0 z-50",
-        "bg-navy-900 backdrop-blur-lg border-t border-navy-800",
+        "bg-navy-900 backdrop-blur-lg",
         "safe-area-pb"
       )}
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
+      <div className="glow-separator" />
       <div className="flex items-stretch h-14">
         {BOTTOM_NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");

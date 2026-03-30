@@ -14,12 +14,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const isPublic = PUBLIC_PATHS.includes(pathname);
 
   if (isPublic || !user) {
-    return <main className="page-transition">{children}</main>;
+    return <main className="page-enter" key={pathname}>{children}</main>;
   }
 
   return (
     <main
-      className={`page-transition transition-[margin] duration-300
+      key={pathname}
+      className={`page-enter transition-[margin] duration-300
         pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0
         ${collapsed ? "md:ml-[68px]" : "md:ml-60"}`}
     >

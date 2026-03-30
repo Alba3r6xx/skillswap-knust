@@ -146,10 +146,12 @@ export default function Navbar() {
         role="navigation"
         aria-label="Main navigation"
         className={`hidden md:flex fixed left-0 top-0 bottom-0 z-40 flex-col
-          bg-navy-900 text-navy-50 border-r border-navy-800
+          bg-navy-900 text-navy-50
           transition-[width] duration-300 ease-out
           ${collapsed ? "w-[68px]" : "w-60"}`}
       >
+        {/* Glow edge */}
+        <div className="absolute top-0 right-0 bottom-0 glow-separator-v" />
         <div className="flex flex-col h-full">
           {/* Logo row */}
           <div className={`flex items-center ${collapsed ? "flex-col gap-2 p-4 pt-5" : "justify-between p-5 pb-6"}`}>
@@ -195,7 +197,7 @@ export default function Navbar() {
                   <Bell className="h-5 w-5 shrink-0" />
                   {!collapsed && <span>Notifications</span>}
                   {unreadNotifs > 0 && (
-                    <span className="absolute top-1.5 right-2 h-4 w-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">
+                    <span className="absolute top-1.5 right-2 h-4 w-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold badge-pulse">
                       {unreadNotifs}
                     </span>
                   )}
@@ -294,7 +296,7 @@ export default function Navbar() {
               >
                 <Bell className="h-5 w-5" />
                 {unreadNotifs > 0 && (
-                  <span className="absolute top-1.5 right-1.5 h-4 w-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">
+                  <span className="absolute top-1.5 right-1.5 h-4 w-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold badge-pulse">
                     {unreadNotifs > 9 ? "9+" : unreadNotifs}
                   </span>
                 )}
@@ -341,8 +343,9 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* Mobile header spacer */}
+      {/* Mobile header spacer + glow separator */}
       <div className="md:hidden" style={{ height: "calc(3rem + env(safe-area-inset-top))" }} />
+      <div className="md:hidden glow-separator" />
     </TooltipProvider>
   );
 }

@@ -93,7 +93,7 @@ export default function MatchesPage() {
     const isMutual = match.type === "mutual";
 
     return (
-      <Card key={peer.id} className={isMutual ? "border-gold-300 dark:border-gold-500/50 ring-1 ring-gold-200 dark:ring-gold-500/30" : ""}>
+      <Card key={peer.id} className={`card-glow ${isMutual ? "border-gold-300 dark:border-gold-500/50 ring-1 ring-gold-200 dark:ring-gold-500/30" : ""}`}>
         {isMutual && (
           <div className="px-4 pt-3 pb-0 flex items-center gap-1.5">
             <Star className="h-3.5 w-3.5 text-gold-500 fill-gold-500" />
@@ -103,7 +103,7 @@ export default function MatchesPage() {
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
             <div className="relative">
-              <Avatar className="h-11 w-11">
+              <Avatar className="h-11 w-11 avatar-glow rounded-full">
                 {peer.avatar_url ? (
                   <img src={peer.avatar_url} alt={peer.name} className="h-full w-full object-cover rounded-full" />
                 ) : (
@@ -151,7 +151,7 @@ export default function MatchesPage() {
                   {peer.skills_to_teach
                     .filter((t) => user.skills_to_learn.some((l) => l.name.toLowerCase() === t.name.toLowerCase()))
                     .map((s) => (
-                      <Badge key={s.name} className="text-[10px] bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
+                      <Badge key={s.name} className="text-[10px] bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 badge-hover">
                         {s.name}
                       </Badge>
                     ))}
@@ -169,7 +169,7 @@ export default function MatchesPage() {
                   {peer.skills_to_learn
                     .filter((l) => user.skills_to_teach.some((t) => t.name.toLowerCase() === l.name.toLowerCase()))
                     .map((s) => (
-                      <Badge key={s.name} className="text-[10px] bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400">
+                      <Badge key={s.name} className="text-[10px] bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400 badge-hover">
                         {s.name}
                       </Badge>
                     ))}
@@ -198,9 +198,9 @@ export default function MatchesPage() {
   return (
     <div className="min-h-dvh bg-background">
       {/* ── Navy page banner ── */}
-      <div className="bg-navy-900 pt-4 md:pt-8 pb-14 px-4">
+      <div className="bg-navy-900 pt-2 md:pt-8 pb-16 px-4">
         <div className="mx-auto max-w-4xl">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between animate-slide-up">
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-white">Your Matches</h1>
               <p className="text-sm text-navy-300 mt-1">Students who complement your skills</p>
@@ -215,7 +215,7 @@ export default function MatchesPage() {
       </div>
 
       {/* ── Content overlapping banner ── */}
-      <div className="mx-auto px-4 -mt-8 pb-8 max-w-4xl relative z-10">
+      <div className="mx-auto px-4 -mt-10 pb-8 max-w-4xl relative z-10">
 
         {matches.length === 0 ? (
           <EmptyState

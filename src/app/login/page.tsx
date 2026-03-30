@@ -145,10 +145,9 @@ export default function LoginPage() {
 
       {/* ── RIGHT PANEL — Form ── */}
       <div className="flex-1 flex flex-col bg-background overflow-y-auto">
-        {/* Top bar */}
-        <div className="flex items-center justify-between px-6 py-4 shrink-0">
-          {/* Mobile logo */}
-          <Link href="/" className="flex items-center gap-2 lg:invisible">
+        {/* Top bar — desktop only row */}
+        <div className="hidden lg:flex items-center justify-between px-6 py-4 shrink-0">
+          <Link href="/" className="flex items-center gap-2 invisible">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
               <Repeat2 className="h-4 w-4 text-white" />
             </div>
@@ -157,7 +156,7 @@ export default function LoginPage() {
             </span>
           </Link>
           <div className="flex items-center gap-3 ml-auto">
-            <span className="text-xs text-muted-foreground hidden sm:inline">New to SkillSwap?</span>
+            <span className="text-xs text-muted-foreground">New to SkillSwap?</span>
             <Link href="/register">
               <Button variant="outline" size="sm">Create account</Button>
             </Link>
@@ -170,28 +169,70 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Mobile brand strip — shows branding context on small screens */}
-        <div className="lg:hidden bg-navy-900 mx-4 rounded-xl p-5 mb-4">
-          <h2 className="text-lg font-bold text-white mb-1">Welcome back to your skill network</h2>
-          <p className="text-xs text-navy-300 leading-relaxed">Your sessions, matches, and messages are waiting.</p>
-          <div className="flex gap-3 mt-3">
-            {[
-              { value: "1,200+", label: "Students" },
-              { value: "4,800+", label: "Sessions" },
-              { value: "4.8★",   label: "Avg rating" },
-            ].map(({ value, label }) => (
-              <div key={label} className="flex-1 rounded-lg bg-navy-800/60 border border-navy-700/60 px-2 py-2 text-center">
-                <p className="text-sm font-bold text-white">{value}</p>
-                <p className="text-[10px] text-navy-400">{label}</p>
+        {/* Mobile hero — immersive navy section matching desktop quality */}
+        <div className="lg:hidden relative overflow-hidden bg-gradient-to-br from-navy-950 via-navy-900 to-navy-800">
+          {/* Decorative texture + glow */}
+          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} aria-hidden />
+          <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full blur-3xl opacity-[0.08]" style={{ background: "oklch(0.769 0.188 70)" }} aria-hidden />
+          <div className="absolute -bottom-12 -left-12 w-36 h-36 rounded-full blur-3xl opacity-[0.06]" style={{ background: "oklch(0.68 0.104 232)" }} aria-hidden />
+
+          <div className="relative px-5 pt-5 pb-8">
+            {/* Top row: logo + actions */}
+            <div className="flex items-center justify-between mb-6">
+              <Link href="/" className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                  <Repeat2 className="h-4 w-4 text-white" />
+                </div>
+                <span className="text-sm font-bold text-white tracking-tight">
+                  Skill<span className="text-primary">Swap</span>
+                </span>
+              </Link>
+              <div className="flex items-center gap-2">
+                {mounted && (
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-navy-300 hover:text-white hover:bg-navy-800"
+                    onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+                    {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                  </Button>
+                )}
+                <Link href="/register">
+                  <Button size="sm" variant="outline" className="h-8 text-xs border-navy-600 text-navy-200 hover:bg-navy-800 hover:text-white bg-transparent">
+                    Create account
+                  </Button>
+                </Link>
               </div>
-            ))}
+            </div>
+
+            {/* Hero copy */}
+            <div className="animate-slide-up">
+              <h2 className="text-xl font-bold text-white leading-tight mb-1.5">Welcome back to your skill network</h2>
+              <p className="text-sm text-navy-300 leading-relaxed">Your sessions, matches, and messages are waiting.</p>
+            </div>
+
+            {/* Stats strip */}
+            <div className="flex gap-2.5 mt-4 animate-scale-fade">
+              {[
+                { value: "1,200+", label: "Students" },
+                { value: "4,800+", label: "Sessions" },
+                { value: "4.8★",   label: "Avg rating" },
+              ].map(({ value, label }) => (
+                <div key={label} className="flex-1 rounded-xl bg-navy-800/60 border border-navy-700/50 px-2.5 py-2 text-center">
+                  <p className="text-sm font-bold text-white">{value}</p>
+                  <p className="text-[10px] text-navy-400 mt-0.5">{label}</p>
+                </div>
+              ))}
+            </div>
           </div>
+
+          {/* Wave transition */}
+          <svg className="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 32" fill="none" preserveAspectRatio="none" aria-hidden>
+            <path d="M0 32h1440V16c-240 10-480 16-720 12S240 10 0 16v16z" className="fill-background" />
+          </svg>
         </div>
 
         {/* Form body */}
-        <div className="flex-1 flex items-center justify-center px-6 py-8">
+        <div className="flex-1 flex items-center justify-center px-6 py-6 lg:py-8">
           <div className="w-full max-w-md">
-            <div className="mb-8">
+            <div className="mb-6 lg:mb-8">
               <h1 className="text-2xl font-bold text-navy-900 dark:text-foreground mb-1">Welcome back</h1>
               <p className="text-sm text-muted-foreground">Sign in with your KNUST student email</p>
             </div>

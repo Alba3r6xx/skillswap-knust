@@ -74,9 +74,9 @@ export default function SearchPage() {
   return (
     <div className="min-h-dvh bg-background">
       {/* ── Navy page banner ── */}
-      <div className="bg-navy-900 pt-4 md:pt-8 pb-14 px-4">
+      <div className="bg-navy-900 pt-2 md:pt-8 pb-16 px-4">
         <div className="mx-auto max-w-4xl">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 animate-slide-up">
             <h1 className="text-3xl font-bold tracking-tight text-white">Find Peers</h1>
             <OnlineCount variant="badge" />
           </div>
@@ -93,11 +93,11 @@ export default function SearchPage() {
       </div>
 
       {/* ── Content overlapping banner ── */}
-      <div className="mx-auto px-4 -mt-8 pb-8 max-w-4xl relative z-10">
-        <Card className="p-4 mb-6">
-          <div className="flex flex-wrap gap-2">
+      <div className="mx-auto px-4 -mt-10 pb-8 max-w-4xl relative z-10">
+        <Card className="p-4 mb-6 animate-scale-fade">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
             <Select value={faculty} onValueChange={setFaculty}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Faculty" />
               </SelectTrigger>
               <SelectContent>
@@ -107,7 +107,7 @@ export default function SearchPage() {
               </SelectContent>
             </Select>
             <Select value={mode} onValueChange={setMode}>
-              <SelectTrigger className="w-[130px]">
+              <SelectTrigger className="w-full sm:w-[130px]">
                 <SelectValue placeholder="Mode" />
               </SelectTrigger>
               <SelectContent>
@@ -117,7 +117,7 @@ export default function SearchPage() {
               </SelectContent>
             </Select>
             <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-full sm:w-[150px]">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
@@ -127,7 +127,7 @@ export default function SearchPage() {
               </SelectContent>
             </Select>
             <Select value={level} onValueChange={setLevel}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-full sm:w-[140px]">
                 <SelectValue placeholder="Level" />
               </SelectTrigger>
               <SelectContent>
@@ -157,7 +157,7 @@ export default function SearchPage() {
             action={hasFilters ? { label: "Clear filters", onClick: () => { setFaculty(""); setMode(""); setCategory(""); setLevel(""); } } : { label: "Update my profile", href: "/profile" }}
           />
         ) : (
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-2 gap-4 stagger-children">
             {results.map((peer) => {
               const initials = peer.name.split(" ").map((n) => n[0]).join("").toUpperCase();
               const lastSeen = getTimeSinceLastSeen(peer.last_seen);
@@ -169,7 +169,7 @@ export default function SearchPage() {
               const isHighDemand = skillDemand >= 8;
 
               return (
-                <Card key={peer.id} className="relative overflow-hidden content-fade-in">
+                <Card key={peer.id} className="relative overflow-hidden card-glow">
                   {isHighDemand && (
                     <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-gold-400 via-gold-500 to-gold-400" />
                   )}
@@ -189,7 +189,7 @@ export default function SearchPage() {
                     </div>
                     <div className="flex items-start gap-3">
                       <div className="relative">
-                        <Avatar className="h-12 w-12">
+                        <Avatar className="h-12 w-12 avatar-glow rounded-full">
                           {peer.avatar_url ? (
                             <img src={peer.avatar_url} alt={peer.name} className="h-full w-full object-cover rounded-full" />
                           ) : (
@@ -231,7 +231,7 @@ export default function SearchPage() {
                           </p>
                           <div className="flex flex-wrap gap-1">
                             {peer.skills_to_teach.slice(0, 3).map((s) => (
-                              <Badge key={s.name} className="text-[10px] bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
+                              <Badge key={s.name} className="text-[10px] bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 badge-hover">
                                 {s.name}
                               </Badge>
                             ))}
@@ -248,7 +248,7 @@ export default function SearchPage() {
                           </p>
                           <div className="flex flex-wrap gap-1">
                             {peer.skills_to_learn.slice(0, 3).map((s) => (
-                              <Badge key={s.name} className="text-[10px] bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400">
+                              <Badge key={s.name} className="text-[10px] bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400 badge-hover">
                                 {s.name}
                               </Badge>
                             ))}

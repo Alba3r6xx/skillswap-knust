@@ -163,23 +163,23 @@ export default function ProfilePage() {
   return (
     <div className="bg-background min-h-dvh">
       {/* ── Navy page banner ── */}
-      <div className="bg-navy-900 pt-4 md:pt-8 pb-14 px-4">
-        <div className="container mx-auto max-w-2xl">
+      <div className="bg-navy-900 pt-2 md:pt-8 pb-16 px-4">
+        <div className="container mx-auto max-w-2xl animate-slide-up">
           <h1 className="text-3xl font-bold tracking-tight text-white">Your Profile</h1>
           <p className="text-sm text-navy-300 mt-1">Keep it fresh — better profiles get better matches</p>
         </div>
       </div>
 
       {/* ── Content overlapping banner ── */}
-      <div className="container mx-auto px-4 -mt-8 pb-24 max-w-2xl relative z-10">
+      <div className="container mx-auto px-4 -mt-10 pb-24 max-w-2xl relative z-10">
 
         {/* ── Profile header card ── */}
-        <Card className="mb-6">
+        <Card className="mb-6 animate-scale-fade">
           <CardContent className="pt-5">
             <div className="flex items-center gap-4">
               {/* Avatar */}
               <div className="relative group shrink-0">
-                <Avatar className="h-20 w-20">
+                <Avatar className="h-20 w-20 avatar-glow rounded-full">
                   {user.avatar_url ? (
                     <img src={user.avatar_url} alt={user.name} className="h-full w-full object-cover rounded-full" />
                   ) : (
@@ -325,7 +325,7 @@ export default function ProfilePage() {
                 {skillsToTeach.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {skillsToTeach.map((s) => (
-                      <Badge key={s.name} className="bg-gold-50 text-navy-800 dark:bg-gold-500/20 dark:text-gold-300 gap-1 pr-1">
+                      <Badge key={s.name} className="bg-gold-50 text-navy-800 dark:bg-gold-500/20 dark:text-gold-300 gap-1 pr-1 badge-hover">
                         {s.name}
                         <span className="opacity-60 text-[10px]">·{s.level}</span>
                         <button
@@ -379,7 +379,7 @@ export default function ProfilePage() {
                 {skillsToLearn.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {skillsToLearn.map((s) => (
-                      <Badge key={s.name} className="bg-sky-50 text-navy-800 dark:bg-sky-500/20 dark:text-sky-300 gap-1 pr-1">
+                      <Badge key={s.name} className="bg-sky-50 text-navy-800 dark:bg-sky-500/20 dark:text-sky-300 gap-1 pr-1 badge-hover">
                         {s.name}
                         <span className="opacity-60 text-[10px]">·{s.level}</span>
                         <button

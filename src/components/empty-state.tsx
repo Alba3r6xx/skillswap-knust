@@ -53,7 +53,7 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <div className={cn("flex flex-col items-center justify-center py-16 px-4 text-center", className)}>
+    <div className={cn("flex flex-col items-center justify-center py-16 px-4 text-center animate-bounce-in", className)}>
       <div className="mb-4 w-14 h-14 rounded-2xl bg-navy-50 dark:bg-navy-900/50 flex items-center justify-center text-navy-400 dark:text-navy-500 [&_svg]:h-7 [&_svg]:w-7">
         {icon}
       </div>

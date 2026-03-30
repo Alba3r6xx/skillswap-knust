@@ -272,15 +272,15 @@ export default function SessionsPage() {
   return (
     <div className="min-h-dvh bg-background">
       {/* ── Navy page banner ── */}
-      <div className="bg-navy-900 pt-4 md:pt-8 pb-14 px-4">
+      <div className="bg-navy-900 pt-2 md:pt-8 pb-16 px-4">
         <div className="mx-auto max-w-3xl">
-          <h1 className="text-3xl font-bold tracking-tight text-white">Sessions</h1>
-          <p className="text-sm text-navy-300 mt-1">Manage your upcoming and past swaps</p>
+          <h1 className="text-3xl font-bold tracking-tight text-white animate-slide-up">Sessions</h1>
+          <p className="text-sm text-navy-300 mt-1 animate-slide-up">Manage your upcoming and past swaps</p>
         </div>
       </div>
 
       {/* ── Content overlapping banner ── */}
-      <div className="mx-auto px-4 -mt-8 pb-8 max-w-3xl relative z-10">
+      <div className="mx-auto px-4 -mt-10 pb-8 max-w-3xl relative z-10">
 
         <Tabs defaultValue="upcoming">
           <TabsList className="mb-4">

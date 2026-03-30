@@ -271,6 +271,7 @@ function MessagesContent() {
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [contextMenu, setContextMenu] = useState<{ msg: Message; x: number; y: number } | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const contextMenuJustOpened = useRef(false);
   const isTouchDevice = useRef(false);
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
   const [editingMsg, setEditingMsg] = useState<Message | null>(null);
@@ -303,6 +304,13 @@ function MessagesContent() {
   useEffect(() => {
     isTouchDevice.current = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   }, []);
+
+  // Signal to bottom-nav (via body attribute) that a fullscreen chat is open
+  useEffect(() => {
+    const open = !!(selectedPeerId || selectedGroupId);
+    document.body.setAttribute("data-chat-open", open ? "true" : "");
+    return () => { document.body.removeAttribute("data-chat-open"); };
+  }, [selectedPeerId, selectedGroupId]);
 
   useEffect(() => {
     if (!isLoading && !user) router.push("/login");
@@ -849,7 +857,9 @@ function MessagesContent() {
   const openContextMenu = (msg: Message, x: number, y: number) => {
     if (msg.deleted_at) return;
     window.getSelection()?.removeAllRanges();
+    contextMenuJustOpened.current = true;
     setContextMenu({ msg, x, y });
+    setTimeout(() => { contextMenuJustOpened.current = false; }, 400);
   };
 
   const handleReply = (msg: Message) => {
@@ -984,7 +994,7 @@ function MessagesContent() {
   const selectedPeer = selectedPeerId ? peerProfiles[selectedPeerId] : null;
 
   return (
-    <div className="bg-background flex flex-col overflow-hidden h-dvh -mt-[calc(3rem+env(safe-area-inset-top))] pt-[calc(3rem+env(safe-area-inset-top))] md:mt-0 md:pt-0 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
+    <div className="bg-background flex flex-col overflow-hidden h-dvh -mt-[calc(3rem+env(safe-area-inset-top))] pt-[calc(3rem+env(safe-area-inset-top))] md:mt-0 md:pt-0">
       {/* Header - only show on conversation list view or desktop */}
       <div className={`${(selectedPeerId || selectedGroupId) ? "hidden md:block" : "block"} bg-navy-900 px-4 pt-4 pb-4 md:pt-6 md:pb-5`}>
         <div className="max-w-4xl mx-auto w-full">
@@ -993,7 +1003,7 @@ function MessagesContent() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col md:flex-row max-w-4xl mx-auto w-full px-4 pb-4 min-h-0">
+      <div className={`flex-1 flex flex-col md:flex-row md:max-w-4xl md:mx-auto w-full min-h-0 ${(selectedPeerId || selectedGroupId) ? "md:px-4 md:pb-4" : "px-4 pb-4"}`}>
         <div className="flex-1 flex md:rounded-xl md:border md:overflow-hidden min-h-0">
           {/* Conversation List */}
           <div className={`${(selectedPeerId || selectedGroupId) ? "hidden md:flex" : "flex"} flex-col w-full md:w-80 md:border-r min-h-0`}>
@@ -1160,7 +1170,7 @@ function MessagesContent() {
 
           {/* Chat Area */}
           <div
-            className={`${(selectedPeerId || selectedGroupId) ? "fixed inset-0 z-50 md:relative md:inset-auto md:z-auto flex" : "hidden md:flex"} flex-col flex-1 bg-background min-h-0`}
+            className={`${(selectedPeerId || selectedGroupId) ? "flex" : "hidden md:flex"} flex-col flex-1 bg-background min-h-0 overflow-hidden`}
             onTouchStart={(e) => { chatBackSwipeRef.current = e.touches[0].clientX; }}
             onTouchEnd={(e) => {
               const dx = e.changedTouches[0].clientX - chatBackSwipeRef.current;
@@ -1489,7 +1499,9 @@ function MessagesContent() {
                             }, 400);
                           }}
                           onTouchMove={(e) => {
-                            if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+                            const mx = Math.abs(e.touches[0].clientX - swipeTouchStartX.current);
+                            const my = Math.abs(e.touches[0].clientY - swipeTouchStartY.current);
+                            if ((mx > 10 || my > 10) && longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
                             if (isDeleted) return;
                             const dx = e.touches[0].clientX - swipeTouchStartX.current;
                             const dy = Math.abs(e.touches[0].clientY - swipeTouchStartY.current);
@@ -1705,7 +1717,7 @@ function MessagesContent() {
                 )}
 
                 {/* Input */}
-                <div className={`px-3 py-2 ${!imagePreview && !docFile ? "border-t" : ""} shrink-0 bg-background`} style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+                <div className={`px-3 py-2 ${!imagePreview && !docFile ? "border-t" : ""} shrink-0 bg-background`} style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
                   {/* Hidden file inputs */}
                   <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImagePick} />
                   <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.csv" className="hidden" onChange={handleDocPick} />
@@ -1835,7 +1847,7 @@ function MessagesContent() {
       {contextMenu && (
         <div
           className="fixed inset-0 z-[90] bg-black/20 backdrop-blur-[2px]"
-          onClick={() => setContextMenu(null)}
+          onClick={() => { if (!contextMenuJustOpened.current) setContextMenu(null); }}
           onContextMenu={(e) => { e.preventDefault(); setContextMenu(null); }}
         >
           <div

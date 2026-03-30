@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
@@ -22,6 +22,14 @@ import {
   Award,
   Search,
   MessageSquare,
+  Flame,
+  Zap,
+  Users,
+  Target,
+  ChevronRight,
+  BarChart3,
+  Clock,
+  Sparkles,
 } from "lucide-react";
 import { XPBar } from "@/components/gamification/xp-bar";
 import { StreakCard } from "@/components/gamification/streak-card";
@@ -98,14 +106,46 @@ export default function DashboardPage() {
   const pending = sessions.filter((s) => s.status === "pending");
   const incompleteItems = profileItems.filter((i) => !i.done);
 
+  // Weekly activity data for bar chart
+  const weeklyActivity = useMemo(() => {
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+
+    const counts = Array(7).fill(0);
+    sessions.forEach((s) => {
+      const d = new Date(s.date);
+      if (d >= weekStart) {
+        counts[d.getDay()]++;
+      }
+    });
+    const maxCount = Math.max(...counts, 1);
+    return days.map((day, i) => ({
+      day,
+      count: counts[i],
+      height: Math.max((counts[i] / maxCount) * 100, 6),
+      isToday: i === now.getDay(),
+    }));
+  }, [sessions]);
+
+  const totalSessions = sessions.length;
+  const completionRate = totalSessions > 0 ? Math.round((completed.length / totalSessions) * 100) : 0;
+
   return (
     <div className="min-h-dvh bg-background">
       <ActivityStream currentUserId={user.id} />
 
       {/* ── Navy page banner ── */}
-      <div className="bg-navy-900 pt-4 md:pt-8 pb-14 px-4">
-        <div className="mx-auto max-w-5xl">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 content-fade-in">
+      <div className="relative overflow-hidden bg-gradient-to-br from-navy-950 via-navy-900 to-navy-800 pt-2 md:pt-8 pb-20 px-4">
+        {/* Decorative elements */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} aria-hidden />
+        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full blur-3xl opacity-[0.07]" style={{ background: "oklch(0.769 0.188 70)" }} aria-hidden />
+        <div className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full blur-3xl opacity-[0.05]" style={{ background: "oklch(0.68 0.104 232)" }} aria-hidden />
+
+        <div className="relative mx-auto max-w-5xl">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 animate-slide-up">
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-white">
                 Hey, {user.name.split(" ")[0]}
@@ -115,18 +155,23 @@ export default function DashboardPage() {
             {pending.length > 0 && (
               <Link href="/sessions">
                 <div className="inline-flex items-center gap-2 rounded-full bg-primary text-white px-4 py-2.5 text-sm font-semibold
-                  shadow-[0_2px_8px_oklch(0.769_0.188_70/0.3)] hover:brightness-105 transition-all active:scale-[0.97]">
+                  shadow-[0_4px_16px_oklch(0.769_0.188_70/0.35)] hover:brightness-110 hover:shadow-[0_6px_24px_oklch(0.769_0.188_70/0.45)] transition-all duration-200 active:scale-[0.97]">
                   <Bell className="h-4 w-4" />
-                  {pending.length} request{pending.length > 1 ? "s" : ""} waiting — review now
+                  {pending.length} request{pending.length > 1 ? "s" : ""} waiting
                 </div>
               </Link>
             )}
           </div>
         </div>
+
+        {/* Wave bottom edge */}
+        <svg className="absolute bottom-0 left-0 w-full" viewBox="0 0 1440 40" fill="none" preserveAspectRatio="none" aria-hidden>
+          <path d="M0 40h1440V20c-240 13-480 20-720 15S240 13 0 20v20z" className="fill-background" />
+        </svg>
       </div>
 
       {/* ── Content overlapping banner ── */}
-      <div className="mx-auto px-4 -mt-8 pb-8 max-w-5xl relative z-10">
+      <div className="mx-auto px-4 -mt-10 pb-8 max-w-5xl relative z-10">
 
         {/* Profile completion nudge */}
         {profileScore < 100 && (
@@ -163,66 +208,74 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Stats Grid — Apple Health widget style */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="h-7 w-7 rounded-lg bg-emerald-500 flex items-center justify-center shrink-0">
-                  <GraduationCap className="h-4 w-4 text-white" />
+        {/* ── Stats Grid — Gradient cards with trends ── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 stagger-children">
+          {[
+            {
+              label: "Teaching",
+              value: user.skills_to_teach.length,
+              icon: GraduationCap,
+              gradient: "from-emerald-500 to-emerald-600",
+              lightBg: "bg-emerald-50 dark:bg-emerald-500/10",
+              iconColor: "text-emerald-600 dark:text-emerald-400",
+              accent: "text-emerald-600 dark:text-emerald-400",
+            },
+            {
+              label: "Learning",
+              value: user.skills_to_learn.length,
+              icon: BookOpen,
+              gradient: "from-sky-500 to-sky-600",
+              lightBg: "bg-sky-50 dark:bg-sky-500/10",
+              iconColor: "text-sky-600 dark:text-sky-400",
+              accent: "text-sky-600 dark:text-sky-400",
+            },
+            {
+              label: "Swaps Done",
+              value: completed.length,
+              icon: Zap,
+              gradient: "from-gold-500 to-gold-600",
+              lightBg: "bg-gold-50 dark:bg-gold-500/10",
+              iconColor: "text-gold-600 dark:text-gold-400",
+              accent: "text-gold-600 dark:text-gold-400",
+            },
+            {
+              label: "Rating",
+              value: user.rating,
+              icon: Star,
+              gradient: "from-purple-500 to-purple-600",
+              lightBg: "bg-purple-50 dark:bg-purple-500/10",
+              iconColor: "text-purple-600 dark:text-purple-400",
+              accent: "text-purple-600 dark:text-purple-400",
+              isRating: true,
+            },
+          ].map(({ label, value, icon: Icon, lightBg, iconColor, accent, isRating }) => (
+            <Card key={label} className="stat-card group">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className={`h-9 w-9 rounded-xl ${lightBg} flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110`}>
+                    <Icon className={`h-4.5 w-4.5 ${iconColor}`} />
+                  </div>
+                  {!isRating && value > 0 && (
+                    <span className={`text-[10px] font-bold ${accent} bg-current/10 px-1.5 py-0.5 rounded-full flex items-center gap-0.5`}>
+                      <TrendingUp className="h-2.5 w-2.5" /> Active
+                    </span>
+                  )}
                 </div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Teaching</span>
-              </div>
-              <p className="text-3xl font-bold font-display tracking-tight leading-none">
-                <AnimatedCounter value={user.skills_to_teach.length} />
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="h-7 w-7 rounded-lg bg-sky-500 flex items-center justify-center shrink-0">
-                  <BookOpen className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Learning</span>
-              </div>
-              <p className="text-3xl font-bold font-display tracking-tight leading-none">
-                <AnimatedCounter value={user.skills_to_learn.length} />
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
-                  <Calendar className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Swaps done</span>
-              </div>
-              <p className="text-3xl font-bold font-display tracking-tight leading-none">
-                <AnimatedCounter value={completed.length} />
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="h-7 w-7 rounded-lg bg-navy-700 dark:bg-navy-600 flex items-center justify-center shrink-0">
-                  <Star className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Rating</span>
-              </div>
-              <p className="text-3xl font-bold font-display tracking-tight leading-none">
-                {user.rating > 0 ? (
-                  <AnimatedCounter value={user.rating} decimals={1} />
-                ) : "—"}
-              </p>
-            </CardContent>
-          </Card>
+                <p className="text-3xl font-bold font-display tracking-tight leading-none mb-0.5">
+                  {isRating ? (
+                    value > 0 ? <><AnimatedCounter value={value} decimals={1} /><Star className="inline h-4 w-4 text-gold-500 fill-gold-500 ml-1 -mt-1" /></> : "—"
+                  ) : (
+                    <AnimatedCounter value={value} />
+                  )}
+                </p>
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* Main Content */}
+        <div className="grid md:grid-cols-3 gap-6 stagger-children">
+          {/* ── Main Content ── */}
           <div className="md:col-span-2 space-y-6">
 
             {/* XP + Streak row */}
@@ -231,14 +284,108 @@ export default function DashboardPage() {
               <StreakCard streak={streak} />
             </div>
 
-            {/* Upcoming Sessions */}
+            {/* ── Weekly Activity — Fluid Area Graph ── */}
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-primary" />
+                    <CardTitle className="text-base">This Week</CardTitle>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{sessions.filter(s => { const d = new Date(s.date); const now = new Date(); const ws = new Date(now); ws.setDate(now.getDate() - now.getDay()); ws.setHours(0,0,0,0); return d >= ws; }).length} sessions</span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const W = 320, H = 100, PX = 24, PY = 12;
+                  const maxVal = Math.max(...weeklyActivity.map(d => d.count), 1);
+                  const points = weeklyActivity.map((d, i) => ({
+                    x: PX + (i / 6) * (W - PX * 2),
+                    y: PY + (1 - d.count / maxVal) * (H - PY * 2),
+                    ...d,
+                  }));
+                  // Smooth cubic bezier path
+                  const linePath = points.reduce((acc, p, i, arr) => {
+                    if (i === 0) return `M${p.x},${p.y}`;
+                    const prev = arr[i - 1];
+                    const cpx = (prev.x + p.x) / 2;
+                    return `${acc} C${cpx},${prev.y} ${cpx},${p.y} ${p.x},${p.y}`;
+                  }, "");
+                  const areaPath = `${linePath} L${points[points.length - 1].x},${H} L${points[0].x},${H} Z`;
+
+                  return (
+                    <div className="relative">
+                      <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full h-auto" preserveAspectRatio="xMidYMid meet">
+                        <defs>
+                          <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="oklch(0.769 0.188 70)" stopOpacity="0.3" />
+                            <stop offset="100%" stopColor="oklch(0.769 0.188 70)" stopOpacity="0.02" />
+                          </linearGradient>
+                          <linearGradient id="lineStroke" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor="oklch(0.68 0.104 232)" />
+                            <stop offset="50%" stopColor="oklch(0.769 0.188 70)" />
+                            <stop offset="100%" stopColor="oklch(0.68 0.104 232)" />
+                          </linearGradient>
+                        </defs>
+
+                        {/* Horizontal grid lines */}
+                        {[0.25, 0.5, 0.75].map(frac => (
+                          <line key={frac} x1={PX} x2={W - PX} y1={PY + frac * (H - PY * 2)} y2={PY + frac * (H - PY * 2)}
+                            stroke="currentColor" strokeOpacity="0.06" strokeDasharray="4 4" />
+                        ))}
+
+                        {/* Area fill */}
+                        <path d={areaPath} fill="url(#areaFill)" className="area-draw" />
+
+                        {/* Line */}
+                        <path d={linePath} fill="none" stroke="url(#lineStroke)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="line-draw" />
+
+                        {/* Data points + labels */}
+                        {points.map((p, i) => (
+                          <g key={p.day}>
+                            {/* Dot */}
+                            <circle cx={p.x} cy={p.y} r={p.isToday ? 5 : 3.5}
+                              fill={p.isToday ? "oklch(0.769 0.188 70)" : p.count > 0 ? "oklch(0.68 0.104 232)" : "currentColor"}
+                              fillOpacity={p.count > 0 ? 1 : 0.15}
+                              stroke="var(--color-background, white)" strokeWidth="2"
+                            />
+                            {/* Today pulse ring */}
+                            {p.isToday && (
+                              <circle cx={p.x} cy={p.y} r="8" fill="none" stroke="oklch(0.769 0.188 70)" strokeWidth="1.5" opacity="0.4">
+                                <animate attributeName="r" values="5;10;5" dur="2s" repeatCount="indefinite" />
+                                <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite" />
+                              </circle>
+                            )}
+                            {/* Count label above dot */}
+                            {p.count > 0 && (
+                              <text x={p.x} y={p.y - 10} textAnchor="middle" className="fill-current text-muted-foreground" fontSize="9" fontWeight="700">{p.count}</text>
+                            )}
+                            {/* Day label below */}
+                            <text x={p.x} y={H + 14} textAnchor="middle" fontSize="9"
+                              fontWeight={p.isToday ? "700" : "500"}
+                              className={p.isToday ? "fill-primary" : "fill-current text-muted-foreground"}
+                              fillOpacity={p.isToday ? 1 : 0.5}
+                            >{p.day}</text>
+                          </g>
+                        ))}
+                      </svg>
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+
+            {/* ── Upcoming Sessions ── */}
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">Upcoming Sessions</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-sky-500" />
+                    <CardTitle className="text-base">Upcoming Sessions</CardTitle>
+                  </div>
                   <Link href="/sessions">
-                    <Button variant="ghost" size="sm" className="text-xs gap-1">
-                      View all <ArrowRight className="h-3 w-3" />
+                    <Button variant="ghost" size="sm" className="text-xs gap-1 h-7">
+                      View all <ChevronRight className="h-3 w-3" />
                     </Button>
                   </Link>
                 </div>
@@ -253,19 +400,26 @@ export default function DashboardPage() {
                     secondaryAction={{ label: "View matches", href: "/matches" }}
                   />
                 ) : (
-                  <div className="space-y-3">
-                    {upcoming.slice(0, 3).map((session) => (
+                  <div className="space-y-1">
+                    {upcoming.slice(0, 3).map((session, idx) => (
                       <div
                         key={session.id}
-                        className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/60 transition-colors duration-200 group"
                       >
-                        <div>
-                          <p className="text-sm font-medium">{session.skill}</p>
+                        {/* Timeline dot */}
+                        <div className="flex flex-col items-center gap-1 shrink-0">
+                          <div className="h-2.5 w-2.5 rounded-full bg-sky-500 ring-4 ring-sky-100 dark:ring-sky-500/20" />
+                          {idx < Math.min(upcoming.length, 3) - 1 && (
+                            <div className="w-px h-6 bg-border" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold group-hover:text-primary transition-colors">{session.skill}</p>
                           <p className="text-xs text-muted-foreground">
-                            {new Date(session.date).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} at {session.time}
+                            {new Date(session.date).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} · {session.time}
                           </p>
                         </div>
-                        <Badge variant="secondary" className="text-xs capitalize">
+                        <Badge variant="secondary" className="text-[10px] capitalize shrink-0">
                           {session.mode}
                         </Badge>
                       </div>
@@ -275,14 +429,17 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            {/* Top Matches */}
+            {/* ── Top Matches ── */}
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">Top Matches</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-emerald-500" />
+                    <CardTitle className="text-base">Top Matches</CardTitle>
+                  </div>
                   <Link href="/matches">
-                    <Button variant="ghost" size="sm" className="text-xs gap-1">
-                      View all <ArrowRight className="h-3 w-3" />
+                    <Button variant="ghost" size="sm" className="text-xs gap-1 h-7">
+                      View all <ChevronRight className="h-3 w-3" />
                     </Button>
                   </Link>
                 </div>
@@ -296,34 +453,46 @@ export default function DashboardPage() {
                     action={{ label: "Complete your profile", href: "/profile" }}
                   />
                 ) : (
-                  <div className="space-y-2">
-                    {topMatches.map((peer) => {
+                  <div className="space-y-1">
+                    {topMatches.map((peer, idx) => {
                       const initials = peer.name.split(" ").map((n) => n[0]).join("").toUpperCase();
+                      const matchScore = getMatchScore(user, peer);
                       return (
                         <Link
                           key={peer.id}
                           href={`/profile/${peer.id}`}
-                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-navy-50 dark:hover:bg-navy-900/20 transition-colors"
+                          className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/60 transition-all duration-200 group"
                         >
-                          <Avatar className="h-9 w-9">
-                            {peer.avatar_url ? (
-                              <img src={peer.avatar_url} alt={peer.name} className="h-full w-full object-cover rounded-full" />
-                            ) : (
-                              <AvatarFallback className="bg-gold-100 text-navy-800 text-xs font-semibold">
-                                {initials}
-                              </AvatarFallback>
-                            )}
-                          </Avatar>
+                          <div className="relative">
+                            <Avatar className="h-10 w-10 avatar-glow rounded-full">
+                              {peer.avatar_url ? (
+                                <img src={peer.avatar_url} alt={peer.name} className="h-full w-full object-cover rounded-full" />
+                              ) : (
+                                <AvatarFallback className="bg-gold-100 text-navy-800 text-xs font-semibold">
+                                  {initials}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            {/* Rank badge */}
+                            <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-background">
+                              {idx + 1}
+                            </span>
+                          </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{peer.name}</p>
+                            <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{peer.name}</p>
                             <p className="text-xs text-muted-foreground truncate">{peer.faculty}</p>
                           </div>
-                          {peer.rating > 0 && (
-                            <div className="flex items-center gap-1 text-xs">
-                              <Star className="h-3 w-3 text-gold-500 fill-gold-500" />
-                              {peer.rating.toFixed(1)}
+                          <div className="flex items-center gap-2 shrink-0">
+                            {peer.rating > 0 && (
+                              <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                                <Star className="h-3 w-3 text-gold-500 fill-gold-500" />
+                                {peer.rating.toFixed(1)}
+                              </div>
+                            )}
+                            <div className="h-7 px-2 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold flex items-center gap-0.5">
+                              {matchScore}pt
                             </div>
-                          )}
+                          </div>
                         </Link>
                       );
                     })}
@@ -336,35 +505,81 @@ export default function DashboardPage() {
             <Leaderboard currentUserId={user.id} limit={5} />
           </div>
 
-          {/* Sidebar */}
+          {/* ── Sidebar ── */}
           <div className="space-y-6">
+
+            {/* Completion Ring + Stats */}
+            <Card className="overflow-hidden">
+              <div className="relative bg-gradient-to-br from-navy-900 to-navy-800 p-5">
+                <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "20px 20px" }} aria-hidden />
+                <div className="relative flex items-center gap-4">
+                  {/* SVG Ring */}
+                  <div className="relative shrink-0">
+                    <svg width="72" height="72" viewBox="0 0 72 72" className="-rotate-90">
+                      <circle cx="36" cy="36" r="30" fill="none" stroke="oklch(0.25 0.04 250)" strokeWidth="5" />
+                      <circle
+                        cx="36" cy="36" r="30" fill="none"
+                        stroke="oklch(0.769 0.188 70)"
+                        strokeWidth="5"
+                        strokeLinecap="round"
+                        strokeDasharray={2 * Math.PI * 30}
+                        strokeDashoffset={2 * Math.PI * 30 * (1 - completionRate / 100)}
+                        className="ring-progress"
+                        style={{
+                          "--ring-circumference": `${2 * Math.PI * 30}`,
+                          "--ring-offset": `${2 * Math.PI * 30 * (1 - completionRate / 100)}`,
+                        } as React.CSSProperties}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-sm font-bold text-white">{completionRate}%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">Completion Rate</p>
+                    <p className="text-xs text-navy-300 mt-0.5">{completed.length} of {totalSessions} sessions done</p>
+                    <div className="flex items-center gap-3 mt-2">
+                      <span className="text-[10px] text-navy-400 flex items-center gap-1">
+                        <Flame className="h-3 w-3 text-orange-400" /> {streak}d streak
+                      </span>
+                      <span className="text-[10px] text-navy-400 flex items-center gap-1">
+                        <Zap className="h-3 w-3 text-gold-400" /> {user.xp || 0} XP
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
 
             {/* Unread Messages */}
             {unreadCount > 0 && (
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-xl bg-sky-500 flex items-center justify-center shrink-0">
-                      <MessageSquare className="h-5 w-5 text-white" />
+              <Link href="/messages" className="block">
+                <Card className="card-glow border-sky-200 dark:border-sky-500/30 bg-gradient-to-r from-sky-50 to-background dark:from-sky-500/5 dark:to-background">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-sky-500 flex items-center justify-center shrink-0 shadow-[0_4px_12px_oklch(0.68_0.104_232/0.3)]">
+                        <MessageSquare className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold">{unreadCount} unread message{unreadCount > 1 ? "s" : ""}</p>
+                        <p className="text-xs text-muted-foreground">Don&apos;t leave them on read</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold">{unreadCount} unread</p>
-                      <p className="text-xs text-muted-foreground">Don&apos;t leave them on read</p>
-                    </div>
-                    <Link href="/messages">
-                      <Button size="sm" variant="navy">Reply</Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Link>
             )}
 
             {/* Achievements */}
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">Achievements</CardTitle>
-                  <span className="text-xs text-muted-foreground">{achievements.length} earned</span>
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-gold-500" />
+                    <CardTitle className="text-base">Achievements</CardTitle>
+                  </div>
+                  <span className="text-[11px] font-bold text-gold-600 dark:text-gold-400 bg-gold-50 dark:bg-gold-500/10 px-2 py-0.5 rounded-full">{achievements.length} earned</span>
                 </div>
               </CardHeader>
               <CardContent>
@@ -377,18 +592,22 @@ export default function DashboardPage() {
                     className="py-8"
                   />
                 ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {achievements.slice(0, 8).map((b) => (
+                  <div className="space-y-2">
+                    {achievements.slice(0, 6).map((b) => (
                       <div
                         key={b.id}
                         title={b.description}
-                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium ${
+                        className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-sm font-medium achievement-shimmer ${
                           RARITY_STYLES[b.rarity].bg
                         } ${
                           RARITY_STYLES[b.rarity].border
                         }`}
                       >
-                        <span>{b.icon}</span> {b.name}
+                        <span className="text-lg">{b.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold truncate">{b.name}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{b.description}</p>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -396,33 +615,34 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            {/* Quick Actions */}
+            {/* Quick Actions — Icon Grid */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Shortcuts</CardTitle>
+                <CardTitle className="text-base">Quick Actions</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <Link href="/search" className="block">
-                  <Button variant="outline" className="w-full justify-start gap-2 text-sm rounded-lg">
-                    Find Peers
-                  </Button>
-                </Link>
-                <Link href="/messages" className="block">
-                  <Button variant="outline" className="w-full justify-start gap-2 text-sm rounded-lg">
-                    Messages
-                    {unreadCount > 0 && (
-                      <span className="ml-auto text-xs bg-sky-500 text-white rounded-full px-1.5 py-0.5 font-semibold">{unreadCount}</span>
-                    )}
-                  </Button>
-                </Link>
-                <Link href="/profile" className="block">
-                  <Button variant="outline" className="w-full justify-start gap-2 text-sm rounded-lg">
-                    Edit Profile
-                    {profileScore < 100 && (
-                      <span className="ml-auto text-xs text-gold-600 font-semibold">{profileScore}%</span>
-                    )}
-                  </Button>
-                </Link>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { icon: Search, label: "Find Peers", href: "/search", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-500/10" },
+                    { icon: MessageSquare, label: "Messages", href: "/messages", color: "text-sky-600 dark:text-sky-400", bg: "bg-sky-50 dark:bg-sky-500/10", badge: unreadCount || undefined },
+                    { icon: Users, label: "Matches", href: "/matches", color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-50 dark:bg-purple-500/10" },
+                    { icon: Award, label: "Profile", href: "/profile", color: "text-gold-600 dark:text-gold-400", bg: "bg-gold-50 dark:bg-gold-500/10", badge: profileScore < 100 ? `${profileScore}%` : undefined },
+                  ].map(({ icon: Icon, label, href, color, bg, badge }) => (
+                    <Link key={label} href={href}>
+                      <div className="flex flex-col items-center gap-2 p-3 rounded-xl border border-transparent hover:border-border hover:bg-muted/50 transition-all duration-200 group cursor-pointer">
+                        <div className={`h-10 w-10 rounded-xl ${bg} flex items-center justify-center transition-transform duration-200 group-hover:scale-110 relative`}>
+                          <Icon className={`h-5 w-5 ${color}`} />
+                          {badge && (
+                            <span className="absolute -top-1 -right-1 text-[9px] font-bold bg-red-500 text-white rounded-full h-4 min-w-[16px] flex items-center justify-center px-1">
+                              {badge}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">{label}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </div>
