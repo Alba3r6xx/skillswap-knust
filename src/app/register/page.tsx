@@ -121,7 +121,7 @@ export default function RegisterPage() {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
             <Repeat2 className="h-5 w-5 text-white" />
           </div>
-          <span className="text-lg font-black text-white tracking-tight">
+          <span className="text-lg font-bold text-white tracking-tight">
             Skill<span className="text-primary">Swap</span>
           </span>
         </div>
@@ -129,7 +129,7 @@ export default function RegisterPage() {
         {/* Middle copy */}
         <div className="relative space-y-6">
           <div>
-            <h2 className="text-3xl font-black text-white leading-tight mb-3">
+            <h2 className="text-3xl font-bold text-white leading-tight mb-3">
               The smartest way<br />to learn at KNUST
             </h2>
             <p className="text-navy-300 text-sm leading-relaxed">
@@ -174,7 +174,7 @@ export default function RegisterPage() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
               <Repeat2 className="h-4 w-4 text-white" />
             </div>
-            <span className="text-sm font-black tracking-tight">
+            <span className="text-sm font-bold tracking-tight">
               Skill<span className="text-primary">Swap</span>
             </span>
           </Link>
@@ -192,11 +192,23 @@ export default function RegisterPage() {
           </div>
         </div>
 
+        {/* Mobile brand strip — shows branding context on small screens */}
+        <div className="lg:hidden bg-navy-900 mx-4 rounded-xl p-5 mb-4">
+          <h2 className="text-lg font-bold text-white mb-1">The smartest way to learn at KNUST</h2>
+          <p className="text-xs text-navy-300 leading-relaxed">Trade skills with fellow students. No money, no middleman — just knowledge.</p>
+          <blockquote className="mt-3 rounded-lg bg-navy-800/60 border border-navy-700/60 p-3">
+            <p className="text-xs text-navy-200 italic leading-relaxed">
+              &ldquo;I taught Python and got AutoCAD in return. SkillSwap saved my FYP.&rdquo;
+            </p>
+            <footer className="mt-1.5 text-[10px] text-navy-400 font-medium">— Abena M., CS Level 3</footer>
+          </blockquote>
+        </div>
+
         {/* Form body */}
         <div className="flex-1 flex items-center justify-center px-6 py-8">
           <div className="w-full max-w-md">
             <div className="mb-8">
-              <h1 className="text-2xl font-black text-navy-900 dark:text-foreground mb-1">Create your account</h1>
+              <h1 className="text-2xl font-bold text-navy-900 dark:text-foreground mb-1">Create your account</h1>
               <p className="text-sm text-muted-foreground">Use your KNUST student email to join</p>
             </div>
 

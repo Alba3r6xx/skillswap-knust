@@ -92,7 +92,7 @@ export default function LoginPage() {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
             <Repeat2 className="h-5 w-5 text-white" />
           </div>
-          <span className="text-lg font-black text-white tracking-tight">
+          <span className="text-lg font-bold text-white tracking-tight">
             Skill<span className="text-primary">Swap</span>
           </span>
         </div>
@@ -100,7 +100,7 @@ export default function LoginPage() {
         {/* Middle copy */}
         <div className="relative space-y-6">
           <div>
-            <h2 className="text-3xl font-black text-white leading-tight mb-3">
+            <h2 className="text-3xl font-bold text-white leading-tight mb-3">
               Welcome back to<br />your skill network
             </h2>
             <p className="text-navy-300 text-sm leading-relaxed">
@@ -129,7 +129,7 @@ export default function LoginPage() {
               { value: "4.8★",   label: "Avg rating" },
             ].map(({ value, label }) => (
               <div key={label} className="rounded-xl bg-navy-800/60 border border-navy-700/60 px-3 py-2.5 text-center">
-                <p className="text-base font-black text-white">{value}</p>
+                <p className="text-base font-bold text-white">{value}</p>
                 <p className="text-[11px] text-navy-400 mt-0.5">{label}</p>
               </div>
             ))}
@@ -152,7 +152,7 @@ export default function LoginPage() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
               <Repeat2 className="h-4 w-4 text-white" />
             </div>
-            <span className="text-sm font-black tracking-tight">
+            <span className="text-sm font-bold tracking-tight">
               Skill<span className="text-primary">Swap</span>
             </span>
           </Link>
@@ -170,11 +170,29 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* Mobile brand strip — shows branding context on small screens */}
+        <div className="lg:hidden bg-navy-900 mx-4 rounded-xl p-5 mb-4">
+          <h2 className="text-lg font-bold text-white mb-1">Welcome back to your skill network</h2>
+          <p className="text-xs text-navy-300 leading-relaxed">Your sessions, matches, and messages are waiting.</p>
+          <div className="flex gap-3 mt-3">
+            {[
+              { value: "1,200+", label: "Students" },
+              { value: "4,800+", label: "Sessions" },
+              { value: "4.8★",   label: "Avg rating" },
+            ].map(({ value, label }) => (
+              <div key={label} className="flex-1 rounded-lg bg-navy-800/60 border border-navy-700/60 px-2 py-2 text-center">
+                <p className="text-sm font-bold text-white">{value}</p>
+                <p className="text-[10px] text-navy-400">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Form body */}
         <div className="flex-1 flex items-center justify-center px-6 py-8">
           <div className="w-full max-w-md">
             <div className="mb-8">
-              <h1 className="text-2xl font-black text-navy-900 dark:text-foreground mb-1">Welcome back</h1>
+              <h1 className="text-2xl font-bold text-navy-900 dark:text-foreground mb-1">Welcome back</h1>
               <p className="text-sm text-muted-foreground">Sign in with your KNUST student email</p>
             </div>
 

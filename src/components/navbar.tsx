@@ -265,9 +265,9 @@ export default function Navbar() {
         </div>
       </aside>
 
-      {/* ── Mobile Top Header — slim, no hamburger ── */}
+      {/* ── Mobile Top Header — navy, blends with page banners ── */}
       <header
-        className="md:hidden fixed top-0 left-0 right-0 border-b bg-background/95 backdrop-blur-sm z-40
+        className="md:hidden fixed top-0 left-0 right-0 bg-navy-900 z-40
           flex items-center justify-between px-4"
         style={{
           height: "calc(3rem + env(safe-area-inset-top))",
@@ -278,7 +278,7 @@ export default function Navbar() {
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-white">
             <Repeat2 className="h-3.5 w-3.5" />
           </div>
-          <span className="text-sm font-bold tracking-tight">
+          <span className="text-sm font-bold tracking-tight text-white">
             Skill<span className="text-primary">Swap</span>
           </span>
         </Link>
@@ -289,7 +289,7 @@ export default function Navbar() {
             <PopoverTrigger asChild>
               <button
                 className="relative h-11 w-11 flex items-center justify-center rounded-full
-                  hover:bg-muted transition-colors"
+                  text-navy-200 hover:bg-navy-800 transition-colors"
                 aria-label="Notifications"
               >
                 <Bell className="h-5 w-5" />
@@ -320,7 +320,7 @@ export default function Navbar() {
           {/* Theme toggle */}
           {mounted && (
             <button
-              className="h-11 w-11 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              className="h-11 w-11 flex items-center justify-center rounded-full text-navy-200 hover:bg-navy-800 transition-colors"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               aria-label="Toggle theme"
             >
@@ -330,11 +330,11 @@ export default function Navbar() {
 
           {/* Profile avatar */}
           <Link href="/profile" className="ml-0.5">
-            <Avatar className="h-8 w-8">
+            <Avatar className="h-8 w-8 ring-2 ring-navy-700">
               {user.avatar_url ? (
                 <img src={user.avatar_url} alt={user.name} className="h-full w-full object-cover rounded-full" />
               ) : (
-                <AvatarFallback className="bg-gold-100 text-navy-900 text-xs font-bold">{initials}</AvatarFallback>
+                <AvatarFallback className="bg-navy-700 text-primary text-xs font-bold">{initials}</AvatarFallback>
               )}
             </Avatar>
           </Link>

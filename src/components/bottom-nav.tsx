@@ -75,7 +75,7 @@ export default function BottomNav() {
       aria-label="Mobile navigation"
       className={cn(
         "md:hidden fixed bottom-0 left-0 right-0 z-50",
-        "bg-background/95 backdrop-blur-lg border-t border-border",
+        "bg-navy-900 backdrop-blur-lg border-t border-navy-800",
         "safe-area-pb"
       )}
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
@@ -95,7 +95,7 @@ export default function BottomNav() {
                 "transition-colors duration-100",
                 isActive
                   ? "text-primary"
-                  : "text-muted-foreground"
+                  : "text-navy-400"
               )}
               aria-current={isActive ? "page" : undefined}
             >
