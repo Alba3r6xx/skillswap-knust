@@ -88,8 +88,12 @@ function Button({
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     >
-      {loading && <Loader2 className="animate-spin shrink-0" style={{ width: "1em", height: "1em" }} />}
-      {children}
+      {asChild ? children : (
+        <>
+          {loading && <Loader2 className="animate-spin shrink-0" style={{ width: "1em", height: "1em" }} />}
+          {children}
+        </>
+      )}
     </Comp>
   )
 }
