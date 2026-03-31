@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { getConversations, getMessagesBetween, sendMessage, markMessagesAsRead, getProfileById, deleteMessage, togglePinMessage, editMessage, forwardMessage, addReaction, removeReaction, getReactionsForMessages, searchMessages, updateLastSeen, getTimeSinceLastSeen, createGroup, getGroupsForUser, getGroupMessages, sendGroupMessage, getGroupMembers, leaveGroup, deleteGroupMessage, editGroupMessage, getSessionsByUser } from "@/lib/data";
+import { getConversations, getMessagesBetween, sendMessage, markMessagesAsRead, markMessagesAsDelivered, getProfileById, deleteMessage, togglePinMessage, editMessage, forwardMessage, addReaction, removeReaction, getReactionsForMessages, searchMessages, updateLastSeen, getTimeSinceLastSeen, createGroup, getGroupsForUser, getGroupMessages, sendGroupMessage, getGroupMembers, leaveGroup, deleteGroupMessage, editGroupMessage, getSessionsByUser } from "@/lib/data";
 import { Message, Profile, Reaction, Group, GroupMember, GroupMessage, Session } from "@/lib/types";
 import { computePeerStreak } from "@/lib/gamification";
 import { StreakAvatar } from "@/components/gamification/streak-avatar";
@@ -455,11 +455,15 @@ function MessagesContent() {
     });
   }, [messages]);
 
-  // Update last_seen periodically
+  // Update last_seen periodically + mark messages as delivered
   useEffect(() => {
     if (!user) return;
     updateLastSeen(user.id);
-    const interval = setInterval(() => updateLastSeen(user.id), 60000);
+    markMessagesAsDelivered(user.id);
+    const interval = setInterval(() => {
+      updateLastSeen(user.id);
+      markMessagesAsDelivered(user.id);
+    }, 60000);
     return () => clearInterval(interval);
   }, [user]);
 
@@ -603,6 +607,7 @@ function MessagesContent() {
       if (inputRef.current) { inputRef.current.value = ""; inputRef.current.style.height = "auto"; }
       setReplyTo(null);
       fetchConversations();
+      if (navigator.vibrate) navigator.vibrate(10);
     }
     setSending(false);
     inputRef.current?.focus();
@@ -870,6 +875,7 @@ function MessagesContent() {
     window.getSelection()?.removeAllRanges();
     contextMenuJustOpened.current = true;
     setContextMenu({ msg, x, y });
+    if (navigator.vibrate) navigator.vibrate(20);
     setTimeout(() => { contextMenuJustOpened.current = false; }, 400);
   };
 
@@ -912,6 +918,7 @@ function MessagesContent() {
   const handleReaction = async (msgId: string, emoji: string) => {
     if (!user) return;
     setContextMenu(null);
+    if (navigator.vibrate) navigator.vibrate(15);
     const existing = reactions[msgId]?.find(r => r.user_id === user.id && r.emoji === emoji);
     if (existing) {
       setReactions(prev => ({ ...prev, [msgId]: (prev[msgId] || []).filter(r => r.id !== existing.id) }));
@@ -1023,11 +1030,12 @@ function MessagesContent() {
             <div className="p-3 border-b bg-background flex items-center justify-between">
               <p className="text-sm font-medium text-muted-foreground">Conversations</p>
               <button
-                className="h-7 w-7 rounded-full bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-colors"
-                title="New study group"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-colors"
                 onClick={() => setShowCreateGroup(true)}
               >
                 <UserPlus className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">New Group</span>
+                <span className="sm:hidden">+</span>
               </button>
             </div>
             <div className="flex-1 overflow-y-auto bg-background">
@@ -1834,7 +1842,9 @@ function MessagesContent() {
             className="absolute bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl border dark:border-zinc-700 min-w-[180px] z-[91] animate-in fade-in zoom-in-95 duration-150 overflow-hidden"
             style={{
               left: `clamp(8px, ${contextMenu.x}px, calc(100vw - 196px))`,
-              top: `clamp(8px, ${contextMenu.y}px, calc(100vh - 320px))`,
+              ...(contextMenu.y > window.innerHeight * 0.55
+                ? { bottom: `${Math.max(8, window.innerHeight - contextMenu.y)}px` }
+                : { top: `clamp(8px, ${contextMenu.y}px, calc(100vh - 360px))` }),
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1933,11 +1943,12 @@ function MessagesContent() {
       {/* Create Study Group dialog */}
       {showCreateGroup && (
         <div
-          className="fixed inset-0 z-[95] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center"
+          className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center"
+          style={{ paddingTop: 'var(--sat, 0px)' }}
           onClick={() => setShowCreateGroup(false)}
         >
           <div
-            className="bg-white dark:bg-zinc-900 w-full sm:w-[420px] sm:rounded-2xl rounded-t-2xl max-h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200"
+            className="bg-white dark:bg-zinc-900 w-full sm:w-[420px] sm:rounded-2xl rounded-t-2xl max-h-[80vh] sm:max-h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
