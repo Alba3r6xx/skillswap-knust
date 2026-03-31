@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
-import Image from "next/image";
 import { Repeat2 } from "lucide-react";
 import { useReveal } from "@/hooks/use-reveal";
 
@@ -175,16 +174,14 @@ export default function Home() {
 
       {/* ── HERO ── */}
       <section className="relative bg-navy-800 overflow-hidden" style={{ paddingTop: 'calc(3.5rem + var(--sat, 0px))' }}>
-        {/* Background image — visible on all screens */}
+        {/* Background image — plain img for reliable loading */}
         <div className="absolute inset-0">
-          <Image
-            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1200&h=800&fit=crop"
+          <img
+            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1400&q=80&fit=crop"
             alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover"
-            aria-hidden
+            className="absolute inset-0 w-full h-full object-cover"
+            aria-hidden="true"
+            loading="eager"
           />
           <div className="absolute inset-0 bg-navy-900/85" />
         </div>
@@ -281,12 +278,10 @@ export default function Home() {
                 className="reveal bg-white rounded-2xl overflow-hidden border border-gray-200 hover-lift group"
               >
                 <div className="relative h-36 sm:h-44 overflow-hidden">
-                  <Image
+                  <img
                     src={skill.image}
                     alt={skill.title}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover img-zoom"
+                    className="absolute inset-0 w-full h-full object-cover img-zoom"
                     loading="lazy"
                   />
                   <span className="absolute top-3 left-3 px-3 py-1 bg-sky-500 text-white text-xs font-semibold rounded-full">

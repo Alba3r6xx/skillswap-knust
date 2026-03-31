@@ -19,8 +19,9 @@ export default function PushPrompt() {
   const [subscribing, setSubscribing] = useState(false);
   const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
 
-  // Listen for PWA install prompt
+  // Listen for PWA install prompt — only capture when logged in
   useEffect(() => {
+    if (!user) return;
     const handler = (e: Event) => {
       e.preventDefault();
       deferredPromptRef.current = e as BeforeInstallPromptEvent;
@@ -28,7 +29,7 @@ export default function PushPrompt() {
     };
     window.addEventListener("beforeinstallprompt", handler);
     return () => window.removeEventListener("beforeinstallprompt", handler);
-  }, []);
+  }, [user]);
 
   // Register SW + check notification status
   useEffect(() => {
