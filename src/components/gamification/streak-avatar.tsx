@@ -9,8 +9,8 @@ interface StreakAvatarProps {
   avatarUrl?: string | null;
   name: string;
   size?: "sm" | "md";
+  isOnline?: boolean;
   className?: string;
-  children?: React.ReactNode;
 }
 
 /**
@@ -20,17 +20,29 @@ interface StreakAvatarProps {
  *   1–2 → gold ring
  *   3–5 → orange ring
  *   6+  → red/fire ring + flame badge
+ *
+ * Online dot: bottom-right when no streak, top-left when streak is active
+ * (avoids overlap with the fire badge).
  */
-export function StreakAvatar({ streak, avatarUrl, name, size = "md", className, children }: StreakAvatarProps) {
+export function StreakAvatar({ streak, avatarUrl, name, size = "md", isOnline, className }: StreakAvatarProps) {
   const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase();
   const dim = size === "sm" ? "h-9 w-9" : "h-10 w-10";
   const ringPad = size === "sm" ? "p-[2px]" : "p-[2.5px]";
+  const dotSize = size === "sm" ? "h-2 w-2" : "h-2.5 w-2.5";
 
   const ringColor =
     streak === 0 ? "" :
     streak <= 2 ? "bg-gradient-to-br from-gold-400 to-gold-500" :
     streak <= 5 ? "bg-gradient-to-br from-orange-400 to-orange-500" :
     "bg-gradient-to-br from-orange-500 via-red-500 to-red-600";
+
+  const onlineDot = isOnline ? (
+    <span className={cn(
+      "absolute rounded-full bg-green-500 border-2 border-background",
+      dotSize,
+      streak > 0 ? "-top-0.5 -left-0.5" : "bottom-0 right-0"
+    )} />
+  ) : null;
 
   if (streak === 0) {
     return (
@@ -44,7 +56,7 @@ export function StreakAvatar({ streak, avatarUrl, name, size = "md", className, 
             </AvatarFallback>
           )}
         </Avatar>
-        {children}
+        {onlineDot}
       </div>
     );
   }
@@ -72,7 +84,7 @@ export function StreakAvatar({ streak, avatarUrl, name, size = "md", className, 
         <Flame className="h-2.5 w-2.5" />
         {streak}
       </div>
-      {children}
+      {onlineDot}
     </div>
   );
 }

@@ -1197,11 +1197,7 @@ function MessagesContent() {
                   {/* DM header */}
                   {selectedPeer && selectedPeerId && (
                     <Link href={`/profile/${selectedPeerId}`} className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <StreakAvatar streak={computePeerStreak(allSessions, user.id, selectedPeerId)} avatarUrl={selectedPeer.avatar_url} name={selectedPeer.name} size="sm">
-                        {getTimeSinceLastSeen(selectedPeer.last_seen) === "Online now" && (
-                          <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-background" />
-                        )}
-                      </StreakAvatar>
+                      <StreakAvatar streak={computePeerStreak(allSessions, user.id, selectedPeerId)} avatarUrl={selectedPeer.avatar_url} name={selectedPeer.name} size="sm" isOnline={getTimeSinceLastSeen(selectedPeer.last_seen) === "Online now"} />
                       <div className="min-w-0">
                         <p className="text-sm font-semibold truncate">{selectedPeer.name}</p>
                         {peerTyping ? (

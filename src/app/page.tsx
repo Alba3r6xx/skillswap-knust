@@ -143,7 +143,7 @@ export default function Home() {
   if (user) return null;
 
   return (
-    <div ref={scrollRef} className="min-h-dvh bg-white overflow-x-hidden">
+    <div ref={scrollRef} className="min-h-screen min-h-dvh bg-white overflow-x-hidden" style={{ colorScheme: 'light' }}>
 
       {/* ── NAV ── */}
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-navy-900/95 backdrop-blur-sm" style={{ paddingTop: 'var(--sat, 0px)' }}>
@@ -232,6 +232,12 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Wave divider */}
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg viewBox="0 0 1440 56" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-8 sm:h-14" preserveAspectRatio="none">
+            <path d="M0 56h1440V28c-240 28-480 0-720 14S240 0 0 28v28z" fill="white" />
+          </svg>
+        </div>
       </section>
 
       {/* ── HOW IT WORKS ── */}
