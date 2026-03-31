@@ -25,7 +25,7 @@ interface StreakAvatarProps {
  * (avoids overlap with the fire badge).
  */
 export function StreakAvatar({ streak, avatarUrl, name, size = "md", isOnline, className }: StreakAvatarProps) {
-  const initials = name.split(" ").map((n) => n[0]).join("").toUpperCase();
+  const initials = name.split(" ").filter(Boolean).map((n) => n[0]).join("").toUpperCase() || "?";
   const dim = size === "sm" ? "h-9 w-9" : "h-10 w-10";
   const ringPad = size === "sm" ? "p-[2px]" : "p-[2.5px]";
   const dotSize = size === "sm" ? "h-2 w-2" : "h-2.5 w-2.5";

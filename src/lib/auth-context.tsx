@@ -31,20 +31,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const buildProfileSeed = (
+    authUser: SupabaseUser,
+    fallback?: { name?: string; email?: string; faculty?: string }
+  ) => ({
+    id: authUser.id,
+    name: fallback?.name ?? authUser.user_metadata?.name ?? authUser.email?.split("@")[0] ?? "",
+    email: fallback?.email ?? authUser.email ?? "",
+    faculty: fallback?.faculty ?? authUser.user_metadata?.faculty ?? "",
+  });
+
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", userId)
-      .single();
+      .maybeSingle();
 
-    if (data && !error) {
-      setUser(data as Profile);
-      // Fire-and-forget: update last_seen + mark messages as delivered
-      supabase.rpc("update_last_seen").then(() => {}, () => {});
-      markMessagesAsDelivered(userId).catch(() => {});
+    if (!data || error) {
+      setUser(null);
+      return null;
     }
+
+    setUser(data as Profile);
+    // Fire-and-forget: update last_seen + mark messages as delivered
+    supabase.rpc("update_last_seen").then(() => {}, () => {});
+    markMessagesAsDelivered(userId).catch(() => {});
     return data as Profile | null;
+  };
+
+  const ensureProfile = async (
+    authUser: SupabaseUser,
+    fallback?: { name?: string; email?: string; faculty?: string }
+  ) => {
+    const existingProfile = await fetchProfile(authUser.id);
+    if (existingProfile) {
+      return existingProfile;
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .insert(buildProfileSeed(authUser, fallback));
+
+    if (error) {
+      const recoveredProfile = await fetchProfile(authUser.id);
+      return recoveredProfile;
+    }
+
+    return await fetchProfile(authUser.id);
   };
 
   useEffect(() => {
@@ -52,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setSupabaseUser(session.user);
-        await fetchProfile(session.user.id);
+        await ensureProfile(session.user);
       }
       setIsLoading(false);
     };
@@ -63,13 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
           if (session?.user) {
             setSupabaseUser(session.user);
-            // Only fetch if we don't already have this user loaded
-            setUser((prev) => {
-              if (!prev || prev.id !== session.user.id) {
-                fetchProfile(session.user.id);
-              }
-              return prev;
-            });
+            await ensureProfile(session.user);
           }
         } else if (event === "SIGNED_OUT") {
           setSupabaseUser(null);
@@ -80,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const signUp = async (data: { name: string; email: string; password: string; faculty: string }) => {
@@ -94,7 +123,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return { success: false, error: error.message };
     if (authData.user) {
       setSupabaseUser(authData.user);
-      await fetchProfile(authData.user.id);
+      const profile = await ensureProfile(authData.user, {
+        name: data.name,
+        email: data.email,
+        faculty: data.faculty,
+      });
+      if (!profile) {
+        return {
+          success: false,
+          error: "Account created, but your profile could not be initialized. Re-run your database schema and try signing in again.",
+        };
+      }
     }
     return { success: true };
   };
@@ -108,7 +147,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return { success: false, error: error.message };
     if (authData.user) {
       setSupabaseUser(authData.user);
-      await fetchProfile(authData.user.id);
+      const profile = await ensureProfile(authData.user);
+      if (!profile) {
+        return {
+          success: false,
+          error: "We couldn't load your profile. Re-run your database schema to restore the profiles trigger, then try again.",
+        };
+      }
     }
     return { success: true };
   };
@@ -121,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = async () => {
     if (supabaseUser) {
-      await fetchProfile(supabaseUser.id);
+      await ensureProfile(supabaseUser);
     }
   };
 

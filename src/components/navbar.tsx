@@ -49,6 +49,7 @@ export default function Navbar() {
   const [pendingSessions, setPendingSessions] = useState(0);
   const [notifications, setNotifications] = useState<{ id: string; title: string; message: string; read: boolean; created_at: string }[]>([]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {

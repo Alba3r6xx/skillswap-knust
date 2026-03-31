@@ -55,7 +55,7 @@ export function ActivityStream({ currentUserId }: ActivityStreamProps) {
             .from("profiles")
             .select("name")
             .eq("id", session.teacher_id)
-            .single();
+            .maybeSingle();
 
           if (!teacher) return;
 
@@ -93,7 +93,7 @@ export function ActivityStream({ currentUserId }: ActivityStreamProps) {
             .from("profiles")
             .select("name")
             .eq("id", session.teacher_id)
-            .single();
+            .maybeSingle();
 
           if (!teacher) return;
 

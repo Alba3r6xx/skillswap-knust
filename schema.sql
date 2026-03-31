@@ -349,6 +349,18 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- Backfill profiles for auth users created before the trigger existed
+insert into public.profiles (id, name, email, faculty)
+select
+  users.id,
+  coalesce(users.raw_user_meta_data->>'name', ''),
+  users.email,
+  coalesce(users.raw_user_meta_data->>'faculty', '')
+from auth.users as users
+left join public.profiles on profiles.id = users.id
+where profiles.id is null
+on conflict (id) do nothing;
+
 -- Update last_seen (called from the client via supabase.rpc)
 create or replace function public.update_last_seen()
 returns void

@@ -42,7 +42,7 @@ export default function DashboardPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [topMatches, setTopMatches] = useState<Profile[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -74,9 +74,52 @@ export default function DashboardPage() {
     fetchData();
   }, [user, isLoading, router]);
 
-  const streak = user && sessions.length >= 0 ? computeSwapStreak(sessions, user.id) : 0;
-  const { score: profileScore, items: profileItems } = user ? getProfileCompletion(user) : { score: 0, items: [] };
+  const streak = user ? computeSwapStreak(sessions, user.id) : 0;
+  const { score: profileScore } = user ? getProfileCompletion(user) : { score: 0 };
   const achievements = user ? computeAchievements(sessions, user, user.id) : [];
+
+  const weeklyActivity = useMemo(() => {
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+
+    const counts = Array(7).fill(0);
+    sessions.forEach((s) => {
+      const d = new Date(s.date);
+      if (d >= weekStart) {
+        counts[d.getDay()]++;
+      }
+    });
+
+    return days.map((day, i) => ({
+      day,
+      count: counts[i],
+      isToday: i === now.getDay(),
+    }));
+  }, [sessions]);
+
+  const sessionsThisWeek = weeklyActivity.reduce((total, day) => total + day.count, 0);
+  const chartWidth = 320;
+  const chartHeight = 100;
+  const chartPaddingX = 24;
+  const chartPaddingY = 12;
+  const chartMaxValue = Math.max(...weeklyActivity.map((day) => day.count), 1);
+  const chartPoints = weeklyActivity.map((day, index) => ({
+    ...day,
+    x: chartPaddingX + (index / 6) * (chartWidth - chartPaddingX * 2),
+    y: chartPaddingY + (1 - day.count / chartMaxValue) * (chartHeight - chartPaddingY * 2),
+  }));
+  const chartLinePath = chartPoints.reduce((path, point, index, points) => {
+    if (index === 0) return `M${point.x},${point.y}`;
+    const prev = points[index - 1];
+    const controlX = (prev.x + point.x) / 2;
+    return `${path} C${controlX},${prev.y} ${controlX},${point.y} ${point.x},${point.y}`;
+  }, "");
+  const chartAreaPath = chartPoints.length > 0
+    ? `${chartLinePath} L${chartPoints[chartPoints.length - 1].x},${chartHeight} L${chartPoints[0].x},${chartHeight} Z`
+    : "";
 
   if (isLoading || !user) {
     return (
@@ -101,28 +144,6 @@ export default function DashboardPage() {
   const upcoming = sessions.filter((s) => s.status === "accepted");
   const completed = sessions.filter((s) => s.status === "completed");
   const pending = sessions.filter((s) => s.status === "pending");
-
-  // Weekly activity data for bar chart
-  const weeklyActivity = useMemo(() => {
-    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const now = new Date();
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay());
-    weekStart.setHours(0, 0, 0, 0);
-
-    const counts = Array(7).fill(0);
-    sessions.forEach((s) => {
-      const d = new Date(s.date);
-      if (d >= weekStart) {
-        counts[d.getDay()]++;
-      }
-    });
-    return days.map((day, i) => ({
-      day,
-      count: counts[i],
-      isToday: i === now.getDay(),
-    }));
-  }, [sessions]);
 
   const totalSessions = sessions.length;
   const completionRate = totalSessions > 0 ? Math.round((completed.length / totalSessions) * 100) : 0;
@@ -246,86 +267,74 @@ export default function DashboardPage() {
                     <BarChart3 className="h-4 w-4 text-primary" />
                     <CardTitle className="text-base">This Week</CardTitle>
                   </div>
-                  <span className="text-xs text-muted-foreground">{sessions.filter(s => { const d = new Date(s.date); const now = new Date(); const ws = new Date(now); ws.setDate(now.getDate() - now.getDay()); ws.setHours(0,0,0,0); return d >= ws; }).length} sessions</span>
+                  <span className="text-xs text-muted-foreground">{sessionsThisWeek} sessions</span>
                 </div>
               </CardHeader>
               <CardContent>
-                {(() => {
-                  const W = 320, H = 100, PX = 24, PY = 12;
-                  const maxVal = Math.max(...weeklyActivity.map(d => d.count), 1);
-                  const points = weeklyActivity.map((d, i) => ({
-                    x: PX + (i / 6) * (W - PX * 2),
-                    y: PY + (1 - d.count / maxVal) * (H - PY * 2),
-                    ...d,
-                  }));
-                  // Smooth cubic bezier path
-                  const linePath = points.reduce((acc, p, i, arr) => {
-                    if (i === 0) return `M${p.x},${p.y}`;
-                    const prev = arr[i - 1];
-                    const cpx = (prev.x + p.x) / 2;
-                    return `${acc} C${cpx},${prev.y} ${cpx},${p.y} ${p.x},${p.y}`;
-                  }, "");
-                  const areaPath = `${linePath} L${points[points.length - 1].x},${H} L${points[0].x},${H} Z`;
+                {sessionsThisWeek === 0 ? (
+                  <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-10 text-center">
+                    <BarChart3 className="mx-auto h-8 w-8 text-muted-foreground/60" />
+                    <p className="mt-3 text-sm font-medium">No session activity yet this week</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Book or complete a session to start filling this chart.</p>
+                  </div>
+                ) : (
+                  <div className="relative text-muted-foreground">
+                    <svg viewBox={`0 0 ${chartWidth} ${chartHeight + 20}`} className="w-full h-auto" preserveAspectRatio="xMidYMid meet">
+                      <defs>
+                        <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="oklch(0.769 0.188 70)" stopOpacity="0.3" />
+                          <stop offset="100%" stopColor="oklch(0.769 0.188 70)" stopOpacity="0.02" />
+                        </linearGradient>
+                        <linearGradient id="lineStroke" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="oklch(0.68 0.104 232)" />
+                          <stop offset="50%" stopColor="oklch(0.769 0.188 70)" />
+                          <stop offset="100%" stopColor="oklch(0.68 0.104 232)" />
+                        </linearGradient>
+                      </defs>
 
-                  return (
-                    <div className="relative">
-                      <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full h-auto" preserveAspectRatio="xMidYMid meet">
-                        <defs>
-                          <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="oklch(0.769 0.188 70)" stopOpacity="0.3" />
-                            <stop offset="100%" stopColor="oklch(0.769 0.188 70)" stopOpacity="0.02" />
-                          </linearGradient>
-                          <linearGradient id="lineStroke" x1="0" y1="0" x2="1" y2="0">
-                            <stop offset="0%" stopColor="oklch(0.68 0.104 232)" />
-                            <stop offset="50%" stopColor="oklch(0.769 0.188 70)" />
-                            <stop offset="100%" stopColor="oklch(0.68 0.104 232)" />
-                          </linearGradient>
-                        </defs>
+                      {/* Horizontal grid lines */}
+                      {[0.25, 0.5, 0.75].map(frac => (
+                        <line key={frac} x1={chartPaddingX} x2={chartWidth - chartPaddingX} y1={chartPaddingY + frac * (chartHeight - chartPaddingY * 2)} y2={chartPaddingY + frac * (chartHeight - chartPaddingY * 2)}
+                          stroke="currentColor" strokeOpacity="0.06" strokeDasharray="4 4" />
+                      ))}
 
-                        {/* Horizontal grid lines */}
-                        {[0.25, 0.5, 0.75].map(frac => (
-                          <line key={frac} x1={PX} x2={W - PX} y1={PY + frac * (H - PY * 2)} y2={PY + frac * (H - PY * 2)}
-                            stroke="currentColor" strokeOpacity="0.06" strokeDasharray="4 4" />
-                        ))}
+                      {/* Area fill */}
+                      <path d={chartAreaPath} fill="url(#areaFill)" className="area-draw" />
 
-                        {/* Area fill */}
-                        <path d={areaPath} fill="url(#areaFill)" className="area-draw" />
+                      {/* Line */}
+                      <path d={chartLinePath} fill="none" stroke="url(#lineStroke)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="line-draw" />
 
-                        {/* Line */}
-                        <path d={linePath} fill="none" stroke="url(#lineStroke)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="line-draw" />
-
-                        {/* Data points + labels */}
-                        {points.map((p, i) => (
-                          <g key={p.day}>
-                            {/* Dot */}
-                            <circle cx={p.x} cy={p.y} r={p.isToday ? 5 : 3.5}
-                              fill={p.isToday ? "oklch(0.769 0.188 70)" : p.count > 0 ? "oklch(0.68 0.104 232)" : "currentColor"}
-                              fillOpacity={p.count > 0 ? 1 : 0.15}
-                              stroke="var(--color-background, white)" strokeWidth="2"
-                            />
-                            {/* Today pulse ring */}
-                            {p.isToday && (
-                              <circle cx={p.x} cy={p.y} r="8" fill="none" stroke="oklch(0.769 0.188 70)" strokeWidth="1.5" opacity="0.4">
-                                <animate attributeName="r" values="5;10;5" dur="2s" repeatCount="indefinite" />
-                                <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite" />
-                              </circle>
-                            )}
-                            {/* Count label above dot */}
-                            {p.count > 0 && (
-                              <text x={p.x} y={p.y - 10} textAnchor="middle" className="fill-current text-muted-foreground" fontSize="9" fontWeight="700">{p.count}</text>
-                            )}
-                            {/* Day label below */}
-                            <text x={p.x} y={H + 14} textAnchor="middle" fontSize="9"
-                              fontWeight={p.isToday ? "700" : "500"}
-                              className={p.isToday ? "fill-primary" : "fill-current text-muted-foreground"}
-                              fillOpacity={p.isToday ? 1 : 0.5}
-                            >{p.day}</text>
-                          </g>
-                        ))}
-                      </svg>
-                    </div>
-                  );
-                })()}
+                      {/* Data points + labels */}
+                      {chartPoints.map((point) => (
+                        <g key={point.day}>
+                          {/* Dot */}
+                          <circle cx={point.x} cy={point.y} r={point.isToday ? 5 : 3.5}
+                            fill={point.isToday ? "oklch(0.769 0.188 70)" : point.count > 0 ? "oklch(0.68 0.104 232)" : "currentColor"}
+                            fillOpacity={point.count > 0 ? 1 : 0.15}
+                            stroke="var(--color-background, white)" strokeWidth="2"
+                          />
+                          {/* Today pulse ring */}
+                          {point.isToday && (
+                            <circle cx={point.x} cy={point.y} r="8" fill="none" stroke="oklch(0.769 0.188 70)" strokeWidth="1.5" opacity="0.4">
+                              <animate attributeName="r" values="5;10;5" dur="2s" repeatCount="indefinite" />
+                              <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite" />
+                            </circle>
+                          )}
+                          {/* Count label above dot */}
+                          {point.count > 0 && (
+                            <text x={point.x} y={point.y - 10} textAnchor="middle" fill="currentColor" fontSize="9" fontWeight="700">{point.count}</text>
+                          )}
+                          {/* Day label below */}
+                          <text x={point.x} y={chartHeight + 14} textAnchor="middle" fontSize="9"
+                            fontWeight={point.isToday ? "700" : "500"}
+                            fill={point.isToday ? "oklch(0.769 0.188 70)" : "currentColor"}
+                            fillOpacity={point.isToday ? 1 : 0.5}
+                          >{point.day}</text>
+                        </g>
+                      ))}
+                    </svg>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -409,7 +418,7 @@ export default function DashboardPage() {
                 ) : (
                   <div className="space-y-1">
                     {topMatches.map((peer, idx) => {
-                      const initials = peer.name.split(" ").map((n) => n[0]).join("").toUpperCase();
+                      const initials = peer.name.split(" ").filter(Boolean).map((n) => n[0]).join("").toUpperCase() || "?";
                       const matchScore = getMatchScore(user, peer);
                       return (
                         <Link

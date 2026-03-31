@@ -78,6 +78,7 @@ export default function ProfilePage() {
     if (!isLoading && !user) router.replace("/login");
   }, [isLoading, user, router]);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (user) {
       setName(user.name || "");
@@ -90,6 +91,7 @@ export default function ProfilePage() {
       setSkillsToLearn(user.skills_to_learn || []);
     }
   }, [user]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const completeness = useCompleteness(
     user ? { ...user, name, bio, faculty, contact, skills_to_teach: skillsToTeach, skills_to_learn: skillsToLearn, availability } : null

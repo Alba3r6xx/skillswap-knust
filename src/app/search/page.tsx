@@ -158,7 +158,7 @@ export default function SearchPage() {
         ) : (
           <div className="grid md:grid-cols-2 gap-4 stagger-children">
             {results.map((peer) => {
-              const initials = peer.name.split(" ").map((n) => n[0]).join("").toUpperCase();
+              const initials = peer.name.split(" ").filter(Boolean).map((n) => n[0]).join("").toUpperCase() || "?";
               const lastSeen = getTimeSinceLastSeen(peer.last_seen);
               const isOnline = lastSeen === "Online now";
 

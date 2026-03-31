@@ -8,7 +8,7 @@ export async function getProfileById(id: string): Promise<Profile | null> {
     .from("profiles")
     .select("*")
     .eq("id", id)
-    .single();
+    .maybeSingle();
   return data as Profile | null;
 }
 
@@ -102,8 +102,9 @@ export async function awardXP(userId: string, amount: number) {
     .from("profiles")
     .select("xp")
     .eq("id", userId)
-    .single();
-  const currentXP = (profile as { xp: number } | null)?.xp || 0;
+    .maybeSingle();
+  if (!profile) return;
+  const currentXP = (profile as { xp: number }).xp || 0;
   await supabase
     .from("profiles")
     .update({ xp: currentXP + amount })

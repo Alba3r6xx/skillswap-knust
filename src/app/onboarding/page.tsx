@@ -68,6 +68,7 @@ export default function OnboardingPage() {
   }, [isLoading, user, router]);
 
   // Pre-fill from existing profile data
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (user) {
       setTeachSkills(user.skills_to_teach || []);
@@ -76,6 +77,7 @@ export default function OnboardingPage() {
       setPreferredMode((user.preferred_mode as "online" | "offline" | "both") || "online");
     }
   }, [user]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const addTeachSkill = useCallback((name: string) => {
     const trimmed = name.trim();
@@ -212,8 +214,8 @@ export default function OnboardingPage() {
               <div>
                 <h1 className="text-3xl font-bold mb-2">Welcome, {firstName}!</h1>
                 <p className="text-muted-foreground text-base leading-relaxed">
-                  You're joining KNUST students who teach and learn from each other.
-                  Let's get you set up — takes under a minute.
+                  You&apos;re joining KNUST students who teach and learn from each other.
+                  Let&apos;s get you set up — takes under a minute.
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-4 my-8">
@@ -235,7 +237,7 @@ export default function OnboardingPage() {
                 className="w-full"
                 onClick={handleNext}
               >
-                Let's go <ArrowRight className="h-5 w-5" />
+                Let&apos;s go <ArrowRight className="h-5 w-5" />
               </Button>
             </div>
           )}
@@ -329,7 +331,7 @@ export default function OnboardingPage() {
                   <BookOpen className="h-7 w-7 text-blue-600" />
                 </div>
                 <h1 className="text-2xl font-bold mb-1">What do you want to learn?</h1>
-                <p className="text-sm text-muted-foreground">We'll match you with peers who can teach you.</p>
+                <p className="text-sm text-muted-foreground">We&apos;ll match you with peers who can teach you.</p>
               </div>
 
               {learnSkills.length > 0 && (
@@ -474,7 +476,7 @@ export default function OnboardingPage() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-3xl font-bold mb-2">You're all set, {firstName}!</h1>
+                <h1 className="text-3xl font-bold mb-2">You&apos;re all set, {firstName}!</h1>
                 <p className="text-muted-foreground">
                   Your profile is live. Peers can already find and book you.
                 </p>

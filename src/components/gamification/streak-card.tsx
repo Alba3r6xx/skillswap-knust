@@ -10,11 +10,6 @@ interface StreakCardProps {
 }
 
 export function StreakCard({ streak, compact = false, className }: StreakCardProps) {
-  const label =
-    streak === 0 ? "No streak yet" :
-    streak === 1 ? "1 week streak" :
-    `${streak} week streak`;
-
   const flameColor =
     streak === 0 ? "text-gray-300" :
     streak < 3 ? "text-orange-400" :

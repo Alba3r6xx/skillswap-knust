@@ -67,6 +67,7 @@ export default function SessionsPage() {
 
   useEffect(() => {
     fetchSessions();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   if (isLoading || !user) {
@@ -81,7 +82,8 @@ export default function SessionsPage() {
   }
 
   const handleAccept = async (session: Session) => {
-    await updateSession(session.id, { status: "accepted" });
+    const { error } = await updateSession(session.id, { status: "accepted" });
+    if (error) { toast.error("Failed to accept session"); return; }
     toast.success("Session accepted!");
     await createNotification({
       user_id: session.learner_id,
@@ -94,13 +96,15 @@ export default function SessionsPage() {
   };
 
   const handleCancel = async (session: Session) => {
-    await updateSession(session.id, { status: "cancelled" });
+    const { error } = await updateSession(session.id, { status: "cancelled" });
+    if (error) { toast.error("Failed to cancel session"); return; }
     toast.info("Session cancelled");
     fetchSessions();
   };
 
   const handleComplete = async (session: Session) => {
-    await updateSession(session.id, { status: "completed" });
+    const { error } = await updateSession(session.id, { status: "completed" });
+    if (error) { toast.error("Failed to mark session complete"); return; }
     // Award XP to both participants
     const isTeacher = session.teacher_id === user.id;
     const otherId = isTeacher ? session.learner_id : session.teacher_id;
@@ -125,7 +129,8 @@ export default function SessionsPage() {
     const updates: Partial<Session> = isTeacher
       ? { teacher_rating: rating, teacher_feedback: feedback }
       : { learner_rating: rating, learner_feedback: feedback };
-    await updateSession(selectedSession.id, updates);
+    const { error: rateError } = await updateSession(selectedSession.id, updates);
+    if (rateError) { toast.error("Failed to submit rating"); return; }
     // Recalculate the rated user's aggregate profile rating
     const ratedUserId = isTeacher ? selectedSession.learner_id : selectedSession.teacher_id;
     await recalculateProfileRating(ratedUserId);
@@ -148,7 +153,7 @@ export default function SessionsPage() {
     const otherUserId = isTeacher ? session.learner_id : session.teacher_id;
     const other = profileCache[otherUserId];
     const otherName = other?.name || "Unknown";
-    const initials = otherName.split(" ").map((n) => n[0]).join("").toUpperCase();
+    const initials = otherName.split(" ").filter(Boolean).map((n) => n[0]).join("").toUpperCase() || "?";
     const hasRated = isTeacher ? !!session.teacher_rating : !!session.learner_rating;
 
     return (

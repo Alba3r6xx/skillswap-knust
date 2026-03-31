@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       .from("push_subscriptions")
       .select("*")
       .eq("user_id", recipientId)
-      .single();
+      .maybeSingle();
 
     if (!sub) {
       return NextResponse.json({ sent: false, reason: "No subscription" });

@@ -56,7 +56,7 @@ export function Leaderboard({ currentUserId, limit = 5, className }: Leaderboard
             ))
           : leaders.map((user, i) => {
               const tier = getXPTier(user.xp || 0);
-              const initials = user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+              const initials = user.name.split(" ").filter(Boolean).map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
               const isCurrentUser = user.id === currentUserId;
 
               return (

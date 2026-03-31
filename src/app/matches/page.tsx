@@ -84,7 +84,7 @@ export default function MatchesPage() {
 
   const renderMatchCard = (match: ScoredMatch) => {
     const { profile: peer } = match;
-    const initials = peer.name.split(" ").map((n) => n[0]).join("").toUpperCase();
+    const initials = peer.name.split(" ").filter(Boolean).map((n) => n[0]).join("").toUpperCase() || "?";
     const lastSeen = getTimeSinceLastSeen(peer.last_seen);
     const isOnline = lastSeen === "Online now";
 

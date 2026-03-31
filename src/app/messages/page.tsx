@@ -925,6 +925,7 @@ function MessagesContent() {
       setReactions(prev => ({ ...prev, [msgId]: (prev[msgId] || []).filter(r => r.id !== existing.id) }));
       await removeReaction(msgId, user.id, emoji);
     } else {
+      // eslint-disable-next-line react-hooks/purity
       const temp: Reaction = { id: "temp-" + Date.now(), message_id: msgId, user_id: user.id, emoji, created_at: new Date().toISOString() };
       setReactions(prev => ({ ...prev, [msgId]: [...(prev[msgId] || []), temp] }));
       const { data } = await addReaction(msgId, user.id, emoji);
@@ -1913,7 +1914,7 @@ function MessagesContent() {
               {conversations.filter(c => c.peerId !== selectedPeerId).map((conv) => {
                 const peer = peerProfiles[conv.peerId];
                 if (!peer) return null;
-                const initials = peer.name.split(" ").map((n) => n[0]).join("").toUpperCase();
+                const initials = peer.name.split(" ").filter(Boolean).map((n) => n[0]).join("").toUpperCase() || "?";
                 return (
                   <button
                     key={conv.peerId}
@@ -2002,7 +2003,7 @@ function MessagesContent() {
                 <div className="space-y-1 max-h-48 overflow-y-auto">
                   {Object.values(peerProfiles).map((peer) => {
                     const checked = newGroupMemberIds.includes(peer.id);
-                    const initials = peer.name.split(" ").map((n) => n[0]).join("").toUpperCase();
+                    const initials = peer.name.split(" ").filter(Boolean).map((n) => n[0]).join("").toUpperCase() || "?";
                     return (
                       <button
                         key={peer.id}

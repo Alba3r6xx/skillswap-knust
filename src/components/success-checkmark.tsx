@@ -20,21 +20,26 @@ const CONFETTI_COLORS = [
   "oklch(0.65 0.190 30)",    // Coral
 ];
 
+// Pre-computed confetti pieces — deterministic to avoid impure Math.random() in render
+const CONFETTI_PIECES = Array.from({ length: 16 }, (_, i) => {
+  const angle = (i / 16) * 360;
+  const distance = 28 + ((i * 137 + 42) % 240) / 10; // deterministic 0–24 offset
+  const size = 4 + ((i * 91 + 13) % 40) / 10;        // deterministic 0–4 offset
+  const rad = (angle * Math.PI) / 180;
+  return {
+    x: Math.cos(rad) * distance,
+    y: Math.sin(rad) * distance,
+    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+    size,
+    angle,
+  };
+});
+
 function ConfettiBurst({ count = 16 }: { count?: number }) {
   const shouldReduceMotion = useReducedMotion();
+  const pieces = CONFETTI_PIECES.slice(0, count);
+
   if (shouldReduceMotion) return null;
-
-  const pieces = Array.from({ length: count }, (_, i) => {
-    const angle = (i / count) * 360;
-    const distance = 28 + Math.random() * 24;
-    const color = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
-    const size = 4 + Math.random() * 4;
-    const rad = (angle * Math.PI) / 180;
-    const x = Math.cos(rad) * distance;
-    const y = Math.sin(rad) * distance;
-
-    return { x, y, color, size, angle };
-  });
 
   return (
     <div className="absolute inset-0 pointer-events-none" aria-hidden>

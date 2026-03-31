@@ -1,0 +1,1 @@
+﻿src/app/dashboard/page.tsx(78,83): error TS2353: Object literal may only specify known properties, and 'items' does not exist in type '{ score: any; }'.

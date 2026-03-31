@@ -104,7 +104,7 @@ export default function PublicProfilePage() {
     );
   }
 
-  const initials = profileUser.name.split(" ").map((n) => n[0]).join("").toUpperCase();
+  const initials = profileUser.name.split(" ").filter(Boolean).map((n) => n[0]).join("").toUpperCase() || "?";
   const lastSeen = getTimeSinceLastSeen(profileUser.last_seen);
   const isOnline = lastSeen === "Online now";
   const viewerCount = getViewerCount(profileUser.id);

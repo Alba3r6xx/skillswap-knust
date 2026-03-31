@@ -54,6 +54,7 @@ export default function RegisterPage() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
   useEffect(() => {
     if (!authLoading && user) router.replace("/dashboard");

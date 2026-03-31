@@ -67,7 +67,7 @@ export function computeSwapStreak(sessions: Session[], userId: string): number {
 
   let streak = 0;
   const now = new Date();
-  let checkDate = new Date(now);
+  const checkDate = new Date(now);
 
   while (true) {
     const weekKey = getISOWeek(checkDate);
