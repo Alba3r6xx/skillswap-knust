@@ -29,7 +29,7 @@ const securityHeaders = [
       // Fonts
       "font-src 'self' https://fonts.gstatic.com data:",
       // Images: self + Supabase storage + data URIs + blob (for avatar uploads)
-      "img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in",
+      "img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in https://images.unsplash.com",
       // Connections: self + Supabase API + WebSockets
       "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://*.supabase.in",
       // Media: self + blob (voice notes, audio)
