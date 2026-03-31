@@ -78,7 +78,7 @@ export default function BottomNav() {
         "bg-navy-900 backdrop-blur-lg",
         "safe-area-pb"
       )}
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      style={{ paddingBottom: "var(--sab, env(safe-area-inset-bottom, 0px))" }}
     >
       <div className="glow-separator" />
       <div className="flex items-stretch h-14">

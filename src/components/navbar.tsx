@@ -272,8 +272,8 @@ export default function Navbar() {
         className="md:hidden fixed top-0 left-0 right-0 bg-navy-900 z-40
           flex items-center justify-between px-4"
         style={{
-          height: "calc(3rem + env(safe-area-inset-top))",
-          paddingTop: "env(safe-area-inset-top)",
+          height: "calc(3rem + var(--sat, env(safe-area-inset-top, 0px)))",
+          paddingTop: "var(--sat, env(safe-area-inset-top, 0px))",
         }}
       >
         <Link href="/dashboard" className="flex items-center gap-2 group">
@@ -344,7 +344,7 @@ export default function Navbar() {
       </header>
 
       {/* Mobile header spacer + glow separator */}
-      <div className="md:hidden" style={{ height: "calc(3rem + env(safe-area-inset-top))" }} />
+      <div className="md:hidden" style={{ height: "calc(3rem + var(--sat, env(safe-area-inset-top, 0px)))" }} />
       <div className="md:hidden glow-separator" />
     </TooltipProvider>
   );

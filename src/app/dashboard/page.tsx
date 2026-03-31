@@ -33,7 +33,6 @@ import {
 } from "lucide-react";
 import { XPBar } from "@/components/gamification/xp-bar";
 import { StreakCard } from "@/components/gamification/streak-card";
-import { Leaderboard } from "@/components/gamification/leaderboard";
 import { ActivityStream } from "@/components/social-proof/activity-stream";
 import { EmptyState } from "@/components/empty-state";
 import { computeSwapStreak, getProfileCompletion, computeAchievements, RARITY_STYLES } from "@/lib/gamification";
@@ -500,9 +499,6 @@ export default function DashboardPage() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Leaderboard */}
-            <Leaderboard currentUserId={user.id} limit={5} />
           </div>
 
           {/* ── Sidebar ── */}

@@ -4,6 +4,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Safe-area custom property with fallback */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+}
+
 /* ─────────────────────────────────────────────────────────────
    KNUST DESIGN TOKENS
    Brand: Deep Navy · KNUST Gold · Sky Blue

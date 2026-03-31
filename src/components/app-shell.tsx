@@ -21,7 +21,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <main
       key={pathname}
       className={`page-enter transition-[margin] duration-300
-        pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0
+        pb-[calc(3.5rem+var(--sab,0px))] md:pb-0
         ${collapsed ? "md:ml-[68px]" : "md:ml-60"}`}
     >
       {children}

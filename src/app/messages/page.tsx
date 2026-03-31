@@ -246,7 +246,7 @@ function MessagesContent() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [peerTyping, setPeerTyping] = useState(false);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -520,7 +520,7 @@ function MessagesContent() {
     const { data } = await sendGroupMessage(payload);
     if (data) { setGroupMsgs((prev) => [...prev, data]); fetchGroups(); }
     setNewMessage("");
-    if (inputRef.current) inputRef.current.textContent = "";
+    if (inputRef.current) { inputRef.current.value = ""; inputRef.current.style.height = "auto"; }
     setReplyTo(null);
     setSending(false);
   };
@@ -570,7 +570,7 @@ function MessagesContent() {
       else { setMessages(prev => prev.map(m => m.id === editingMsg.id ? { ...m, content: newMessage.trim(), edited_at: new Date().toISOString() } : m)); }
       setEditingMsg(null);
       setNewMessage("");
-      if (inputRef.current) inputRef.current.textContent = "";
+      if (inputRef.current) { inputRef.current.value = ""; inputRef.current.style.height = "auto"; }
       setSending(false);
       return;
     }
@@ -589,7 +589,7 @@ function MessagesContent() {
     if (data) {
       setMessages((prev) => [...prev, data]);
       setNewMessage("");
-      if (inputRef.current) inputRef.current.textContent = "";
+      if (inputRef.current) { inputRef.current.value = ""; inputRef.current.style.height = "auto"; }
       setReplyTo(null);
       fetchConversations();
     }
@@ -922,7 +922,9 @@ function MessagesContent() {
     setNewMessage(msg.content);
     setTimeout(() => {
       if (inputRef.current) {
-        inputRef.current.textContent = msg.content;
+        inputRef.current.value = msg.content;
+        inputRef.current.style.height = "auto";
+        inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 96) + "px";
         inputRef.current.focus();
       }
     }, 50);
@@ -994,7 +996,7 @@ function MessagesContent() {
   const selectedPeer = selectedPeerId ? peerProfiles[selectedPeerId] : null;
 
   return (
-    <div className="bg-background flex flex-col overflow-hidden h-dvh -mt-[calc(3rem+env(safe-area-inset-top))] pt-[calc(3rem+env(safe-area-inset-top))] md:mt-0 md:pt-0">
+    <div className="bg-background flex flex-col overflow-hidden h-dvh md:mt-0 md:pt-0" style={{ marginTop: 'calc(-3rem - var(--sat, 0px))', paddingTop: 'calc(3rem + var(--sat, 0px))' }}>
       {/* Header - only show on conversation list view or desktop */}
       <div className={`${(selectedPeerId || selectedGroupId) ? "hidden md:block" : "block"} bg-navy-900 px-4 pt-4 pb-4 md:pt-6 md:pb-5`}>
         <div className="max-w-4xl mx-auto w-full">
@@ -1191,7 +1193,7 @@ function MessagesContent() {
             ) : (
               <>
                 {/* Chat Header */}
-                <div className="flex items-center gap-2 px-3 py-2 border-b shrink-0 md:pt-2" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}>
+                <div className="flex items-center gap-2 px-3 py-2 border-b shrink-0 md:pt-2">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -1658,7 +1660,7 @@ function MessagesContent() {
                         <p className="text-[11px] font-semibold text-sky-600 dark:text-sky-400">Editing message</p>
                         <p className="text-xs text-muted-foreground truncate">{editingMsg.content}</p>
                       </div>
-                      <button className="h-6 w-6 rounded-full hover:bg-navy-100 dark:hover:bg-zinc-700 flex items-center justify-center shrink-0" onClick={() => { setEditingMsg(null); setNewMessage(""); if (inputRef.current) inputRef.current.textContent = ""; }}>
+                      <button className="h-6 w-6 rounded-full hover:bg-navy-100 dark:hover:bg-zinc-700 flex items-center justify-center shrink-0" onClick={() => { setEditingMsg(null); setNewMessage(""); if (inputRef.current) { inputRef.current.value = ""; inputRef.current.style.height = "auto"; } }}>
                         <X className="h-3 w-3" />
                       </button>
                     </div>
@@ -1788,20 +1790,22 @@ function MessagesContent() {
                           </button>
                         </>
                       )}
-                      <div className="flex-1 relative">
-                        {!newMessage && (
-                          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground dark:text-zinc-500 pointer-events-none text-base select-none">
-                            {selectedGroupId ? "Message group..." : "Message"}
-                          </div>
-                        )}
-                        <div
+                      <div className="flex-1">
+                        <textarea
                           ref={inputRef}
-                          contentEditable
-                          role="textbox"
+                          inputMode="text"
+                          autoComplete="off"
+                          autoCorrect="on"
+                          autoCapitalize="sentences"
+                          enterKeyHint={isTouchDevice.current ? "send" : "enter"}
                           aria-label="Message"
-                          onInput={() => {
-                            const text = inputRef.current?.textContent || "";
-                            setNewMessage(text);
+                          placeholder={selectedGroupId ? "Message group..." : "Message"}
+                          value={newMessage}
+                          rows={1}
+                          onChange={(e) => {
+                            setNewMessage(e.target.value);
+                            e.target.style.height = "auto";
+                            e.target.style.height = Math.min(e.target.scrollHeight, 96) + "px";
                             if (selectedPeerId) broadcastTyping();
                           }}
                           onKeyDown={(e) => {
@@ -1811,13 +1815,7 @@ function MessagesContent() {
                               else handleSend();
                             }
                           }}
-                          onPaste={(e) => {
-                            e.preventDefault();
-                            const text = e.clipboardData.getData("text/plain");
-                            document.execCommand("insertText", false, text);
-                          }}
-                          className="min-h-[2.75rem] max-h-24 rounded-[22px] bg-navy-50 dark:bg-zinc-800 px-4 py-2.5 text-base outline-none overflow-y-auto break-words whitespace-pre-wrap focus:ring-2 focus:ring-primary/30"
-                          style={{ WebkitUserSelect: "text", userSelect: "text" }}
+                          className="w-full min-h-[2.75rem] max-h-24 rounded-[22px] bg-navy-50 dark:bg-zinc-800 px-4 py-2.5 text-base outline-none overflow-y-auto resize-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground"
                         />
                       </div>
                       {newMessage.trim() ? (
