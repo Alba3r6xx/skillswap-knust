@@ -87,6 +87,17 @@ export default function Navbar() {
     return () => clearInterval(interval);
   }, [user]);
 
+  const handleNotifOpen = useCallback(async (open: boolean) => {
+    if (open && user && notifications.some((n) => !n.read)) {
+      await supabase
+        .from("notifications")
+        .update({ read: true })
+        .eq("user_id", user.id)
+        .eq("read", false);
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    }
+  }, [user, notifications]);
+
   if (PUBLIC_PATHS.includes(pathname) || !user) return null;
 
   const initials = user.name
@@ -96,17 +107,6 @@ export default function Navbar() {
     .toUpperCase();
 
   const unreadNotifs = notifications.filter((n) => !n.read).length;
-
-  const handleNotifOpen = useCallback(async (open: boolean) => {
-    if (open && user && unreadNotifs > 0) {
-      await supabase
-        .from("notifications")
-        .update({ read: true })
-        .eq("user_id", user.id)
-        .eq("read", false);
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    }
-  }, [user, unreadNotifs]);
 
   const renderNavItem = (item: (typeof NAV_ITEMS)[0]) => {
     const isActive = pathname === item.href;
