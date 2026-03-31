@@ -1898,7 +1898,8 @@ function MessagesContent() {
           onClick={() => setForwardMsg(null)}
         >
           <div
-            className="bg-white dark:bg-zinc-900 w-full sm:w-96 sm:rounded-2xl rounded-t-2xl max-h-[70vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200"
+            className="bg-white dark:bg-zinc-900 w-full sm:w-96 sm:rounded-2xl rounded-t-2xl max-h-[60vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200"
+            style={{ paddingBottom: 'calc(4rem + var(--sab, 0px))' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-4 py-3 border-b flex items-center justify-between shrink-0">
@@ -1948,7 +1949,8 @@ function MessagesContent() {
           onClick={() => setShowCreateGroup(false)}
         >
           <div
-            className="bg-white dark:bg-zinc-900 w-full sm:w-[420px] sm:rounded-2xl rounded-t-2xl max-h-[80vh] sm:max-h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200"
+            className="bg-white dark:bg-zinc-900 w-full sm:w-[420px] sm:rounded-2xl rounded-t-2xl max-h-[70vh] sm:max-h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200"
+          style={{ paddingBottom: 'calc(4rem + var(--sab, 0px))' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
