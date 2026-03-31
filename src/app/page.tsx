@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
 import { Repeat2 } from "lucide-react";
-import { useReveal } from "@/hooks/use-reveal";
 
 const HOW_IT_WORKS = [
   {
@@ -132,7 +131,6 @@ const FAQ = [
 export default function Home() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const scrollRef = useReveal();
 
   useEffect(() => {
     if (!isLoading && user) router.replace("/dashboard");
@@ -142,7 +140,7 @@ export default function Home() {
   if (user) return null;
 
   return (
-    <div ref={scrollRef} className="min-h-screen min-h-dvh bg-white overflow-x-hidden" style={{ colorScheme: 'light' }}>
+    <div className="min-h-screen min-h-dvh bg-white overflow-x-hidden" style={{ colorScheme: 'light' }}>
 
       {/* ── NAV ── */}
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-navy-900/95 backdrop-blur-sm" style={{ paddingTop: 'var(--sat, 0px)' }}>
@@ -240,16 +238,16 @@ export default function Home() {
       {/* ── HOW IT WORKS ── */}
       <section className="py-16 sm:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 reveal">
+          <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-navy-900">Three steps. That&apos;s it.</h2>
             <p className="mt-3 text-gray-500 max-w-md mx-auto">
               From sign-up to your first session in under five minutes.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto reveal-stagger">
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             {HOW_IT_WORKS.map((item) => (
-              <div key={item.step} className="text-center reveal">
+              <div key={item.step} className="text-center">
                 <div className="w-14 h-14 bg-sky-100 rounded-xl flex items-center justify-center mx-auto mb-4">
                   {item.icon}
                 </div>
@@ -264,18 +262,18 @@ export default function Home() {
       {/* ── FEATURED SKILLS ── */}
       <section className="py-16 sm:py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 reveal">
+          <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-navy-900">Popular right now</h2>
             <p className="mt-3 text-gray-500 max-w-md mx-auto">
               Skills KNUST students are actively teaching and learning.
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 reveal-stagger">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {FEATURED_SKILLS.map((skill) => (
               <div
                 key={skill.title}
-                className="reveal bg-white rounded-2xl overflow-hidden border border-gray-200 hover-lift group"
+                className="bg-white rounded-2xl overflow-hidden border border-gray-200 hover-lift group"
               >
                 <div className="relative h-36 sm:h-44 overflow-hidden">
                   <img
@@ -315,7 +313,7 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="text-center mt-10 reveal">
+          <div className="text-center mt-10">
             <Link
               href="/register"
               className="tap-scale inline-flex items-center px-6 py-3 rounded-full bg-primary text-white font-semibold text-sm hover:brightness-110 transition-all shadow-lg shadow-primary/25"
@@ -329,15 +327,15 @@ export default function Home() {
       {/* ── TESTIMONIALS ── */}
       <section className="py-16 sm:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 reveal">
+          <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-navy-900">Real students, real swaps</h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto reveal-stagger">
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {TESTIMONIALS.map(({ name, faculty, quote, initials }) => (
               <div
                 key={name}
-                className="reveal bg-gray-50 rounded-2xl p-6 border border-gray-200 hover-lift"
+                className="bg-gray-50 rounded-2xl p-6 border border-gray-200 hover-lift"
               >
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 bg-sky-500 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0">
@@ -358,7 +356,7 @@ export default function Home() {
       {/* ── FAQ ── */}
       <section className="py-16 sm:py-20 bg-navy-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 reveal">
+          <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-white">Got questions?</h2>
             <p className="mt-3 text-navy-300 max-w-md mx-auto">
               Everything you need to know before your first swap.
@@ -391,7 +389,7 @@ export default function Home() {
 
       {/* ── CTA ── */}
       <section className="py-16 sm:py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center reveal">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-navy-900">
             Your next skill is one swap away
           </h2>
