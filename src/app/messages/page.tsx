@@ -533,7 +533,8 @@ function MessagesContent() {
       payload.reply_sender_id = replyTo.sender_id;
     }
     const { data } = await sendGroupMessage(payload);
-    if (data) { setGroupMsgs((prev) => [...prev, data]); fetchGroups(); }
+    // Don't add locally - real-time subscription will handle it
+    fetchGroups();
     setNewMessage("");
     if (inputRef.current) { inputRef.current.value = ""; inputRef.current.style.height = "auto"; }
     setReplyTo(null);
