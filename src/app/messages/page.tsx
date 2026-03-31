@@ -68,6 +68,7 @@ function VoiceMessage({ src, isMine }: { src: string; isMine: boolean }) {
   const [playing, setPlaying] = useState(false);
   const [dur, setDur] = useState(0);
   const [displayTime, setDisplayTime] = useState(0);
+  const [loadError, setLoadError] = useState(false);
   const progressRef = useRef(0);
 
   const fmt = (s: number) => {
@@ -184,7 +185,7 @@ function VoiceMessage({ src, isMine }: { src: string; isMine: boolean }) {
         preload="metadata"
         onLoadedMetadata={() => {
           const a = audioRef.current;
-          if (a && isFinite(a.duration) && a.duration > 0) setDur(a.duration);
+          if (a && isFinite(a.duration) && a.duration > 0) { setDur(a.duration); setLoadError(false); }
         }}
         onDurationChange={() => {
           const a = audioRef.current;
@@ -198,6 +199,7 @@ function VoiceMessage({ src, isMine }: { src: string; isMine: boolean }) {
           setDisplayTime(0);
           drawWaveform(0);
         }}
+        onError={() => setLoadError(true)}
       />
       <button
         onClick={toggle}
@@ -207,7 +209,9 @@ function VoiceMessage({ src, isMine }: { src: string; isMine: boolean }) {
             : "bg-primary hover:brightness-105 shadow-sm"
         }`}
       >
-        {playing
+        {loadError
+          ? <span className="text-[10px] text-white">!</span>
+          : playing
           ? <Pause className="h-4 w-4 text-white" fill="white" />
           : <Play className="h-4 w-4 ml-0.5 text-white" fill="white" />
         }
@@ -219,7 +223,7 @@ function VoiceMessage({ src, isMine }: { src: string; isMine: boolean }) {
           onClick={handleSeek}
         />
         <span className={`text-[10px] tabular-nums block mt-0.5 ${isMine ? "text-white/70" : "text-muted-foreground"}`}>
-          {playing ? fmt(displayTime) : fmt(dur)}
+          {loadError ? "Failed to load" : playing ? fmt(displayTime) : fmt(dur)}
         </span>
       </div>
     </div>

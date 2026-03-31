@@ -33,7 +33,7 @@ const securityHeaders = [
       // Connections: self + Supabase API + WebSockets
       "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://*.supabase.in",
       // Media: self + blob (voice notes, audio)
-      "media-src 'self' blob:",
+      "media-src 'self' blob: https://*.supabase.co https://*.supabase.in",
       // Workers: blob (for audio worklets)
       "worker-src 'self' blob:",
       // Frames: none
