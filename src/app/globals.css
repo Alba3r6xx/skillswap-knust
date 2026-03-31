@@ -548,6 +548,80 @@
       transparent 100%
     );
   }
+
+  /* ── 120fps Scroll-Reveal ─────────────────────────────────── */
+  /* GPU-composited: only opacity + translate (no layout/paint) */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px) translateZ(0);
+    will-change: opacity, transform;
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+  .reveal-left {
+    opacity: 0;
+    transform: translateX(-32px) translateZ(0);
+    will-change: opacity, transform;
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal-left.visible {
+    opacity: 1;
+    transform: translateX(0) translateZ(0);
+  }
+  .reveal-scale {
+    opacity: 0;
+    transform: scale(0.92) translateZ(0);
+    will-change: opacity, transform;
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .reveal-scale.visible {
+    opacity: 1;
+    transform: scale(1) translateZ(0);
+  }
+
+  /* Stagger delays for reveal children */
+  .reveal-stagger > .reveal:nth-child(1) { transition-delay: 0ms; }
+  .reveal-stagger > .reveal:nth-child(2) { transition-delay: 80ms; }
+  .reveal-stagger > .reveal:nth-child(3) { transition-delay: 160ms; }
+  .reveal-stagger > .reveal:nth-child(4) { transition-delay: 240ms; }
+  .reveal-stagger > .reveal:nth-child(5) { transition-delay: 320ms; }
+  .reveal-stagger > .reveal:nth-child(6) { transition-delay: 400ms; }
+
+  /* ── Smooth micro-interactions ───────────────────────────── */
+  /* 120fps tap feedback — composited transform only */
+  .tap-scale {
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    will-change: transform;
+  }
+  .tap-scale:active {
+    transform: scale(0.95) translateZ(0);
+  }
+
+  /* Smooth hover lift — GPU-only */
+  .hover-lift {
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+  }
+  .hover-lift:hover {
+    transform: translateY(-4px) translateZ(0);
+    box-shadow: 0 12px 32px -8px oklch(0 0 0 / 0.12);
+  }
+
+  /* Smooth image zoom on hover */
+  .img-zoom {
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+  }
+  .img-zoom:hover {
+    transform: scale(1.06) translateZ(0);
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────

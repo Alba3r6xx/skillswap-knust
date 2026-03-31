@@ -212,15 +212,15 @@ export default function OnboardingPage() {
               <div>
                 <h1 className="text-3xl font-bold mb-2">Welcome, {firstName}!</h1>
                 <p className="text-muted-foreground text-base leading-relaxed">
-                  You're joining KNUST students already trading skills.
-                  Let's set you up in under 60 seconds.
+                  You're joining KNUST students who teach and learn from each other.
+                  Let's get you set up — takes under a minute.
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-4 my-8">
                 {[
-                  { Icon: GraduationCap, label: "Teach skills", sub: "Share what you know" },
-                  { Icon: BookOpen, label: "Learn skills", sub: "Find expert peers" },
-                  { Icon: Calendar, label: "Book sessions", sub: "Schedule instantly" },
+                  { Icon: GraduationCap, label: "Teach", sub: "Share what you know" },
+                  { Icon: BookOpen, label: "Learn", sub: "Pick up new skills" },
+                  { Icon: Calendar, label: "Swap", sub: "Book sessions instantly" },
                 ].map(({ Icon, label, sub }) => (
                   <div key={label} className="rounded-xl bg-white dark:bg-card border p-4 text-center shadow-sm">
                     <div className="w-10 h-10 rounded-xl bg-navy-50 dark:bg-navy-900/50 flex items-center justify-center mx-auto mb-2">
@@ -248,7 +248,7 @@ export default function OnboardingPage() {
                   <GraduationCap className="h-7 w-7 text-green-600" />
                 </div>
                 <h1 className="text-2xl font-bold mb-1">What can you teach?</h1>
-                <p className="text-sm text-muted-foreground">Share your expertise — even basics help!</p>
+                <p className="text-sm text-muted-foreground">Even beginner-level knowledge counts — someone needs it.</p>
               </div>
 
               {/* Selected */}

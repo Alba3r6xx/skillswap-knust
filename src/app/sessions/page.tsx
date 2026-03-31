@@ -294,7 +294,7 @@ export default function SessionsPage() {
       <div className="bg-navy-900 pt-2 md:pt-8 pb-16 px-4">
         <div className="mx-auto max-w-3xl">
           <h1 className="text-3xl font-bold tracking-tight text-white animate-slide-up">Sessions</h1>
-          <p className="text-sm text-navy-300 mt-1 animate-slide-up">Manage your upcoming and past swaps</p>
+          <p className="text-sm text-navy-300 mt-1 animate-slide-up">Track your upcoming and past swaps</p>
         </div>
       </div>
 
@@ -318,7 +318,7 @@ export default function SessionsPage() {
               <EmptyState
                 icon={<Calendar />}
                 title="No upcoming sessions"
-                description="Nothing locked in. Find someone and set a time."
+                description="Nothing booked yet. Find a peer and lock in a time."
                 action={{ label: "Find someone", href: "/search" }}
                 secondaryAction={{ label: "Check matches", href: "/matches" }}
               />
@@ -331,7 +331,7 @@ export default function SessionsPage() {
               <EmptyState
                 icon={<Clock />}
                 title="No pending requests"
-                description="Session requests land here — yours and ones sent to you."
+                description="Requests you send or receive show up here."
                 action={{ label: "Find someone to ask", href: "/search" }}
               />
             ) : (
@@ -343,7 +343,7 @@ export default function SessionsPage() {
               <EmptyState
                 icon={<CheckCircle2 />}
                 title="No completed sessions yet"
-                description="All your completed swaps will live here."
+                description="Finished swaps show up here. Rate them to earn XP."
                 action={{ label: "Find someone", href: "/search" }}
               />
             ) : (
@@ -355,7 +355,7 @@ export default function SessionsPage() {
               <EmptyState
                 icon={<XCircle />}
                 title="No cancelled sessions"
-                description="Great — all your sessions are on track!"
+                description="Nothing cancelled — you’re on track!"
                 action={{ label: "Book a session", href: "/search" }}
               />
             ) : (

@@ -146,7 +146,7 @@ export default function DashboardPage() {
               <h1 className="text-3xl font-bold tracking-tight text-white">
                 Hey, {user.name.split(" ")[0]}
               </h1>
-              <p className="text-sm text-navy-300 mt-1">Your learning at a glance</p>
+              <p className="text-sm text-navy-300 mt-1">Here&apos;s what&apos;s happening this week</p>
             </div>
             {pending.length > 0 && (
               <Link href="/sessions">
@@ -177,7 +177,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="h-4 w-4 text-gold-600 dark:text-gold-400" />
                   <p className="text-sm font-semibold text-navy-800 dark:text-gold-300">
-                    You're {profileScore}% there — a fuller profile gets you better matches
+                    {profileScore}% complete — finish up for better matches
                   </p>
                 </div>
                 <div className="h-1.5 rounded-full bg-gold-200 dark:bg-gold-500/30 mb-2 overflow-hidden">
@@ -391,7 +391,7 @@ export default function DashboardPage() {
                   <EmptyState
                     icon={<Calendar />}
                     title="No upcoming sessions"
-                    description="Nothing locked in yet. Find someone and get a swap going."
+                    description="Nothing booked yet. Find someone and get a swap going."
                     action={{ label: "Find a peer", href: "/search" }}
                     secondaryAction={{ label: "View matches", href: "/matches" }}
                   />
@@ -445,7 +445,7 @@ export default function DashboardPage() {
                   <EmptyState
                     icon={<Search />}
                     title="No matches yet"
-                    description="Add what you teach and want to learn — we'll find your people."
+                    description="Add your skills and we'll find your people."
                     action={{ label: "Complete your profile", href: "/profile" }}
                   />
                 ) : (
@@ -555,7 +555,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold">{unreadCount} unread message{unreadCount > 1 ? "s" : ""}</p>
-                        <p className="text-xs text-muted-foreground">Don&apos;t leave them on read</p>
+                        <p className="text-xs text-muted-foreground">Tap to catch up</p>
                       </div>
                       <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                     </div>
@@ -580,7 +580,7 @@ export default function DashboardPage() {
                   <EmptyState
                     icon={<Award />}
                     title="No badges yet"
-                    description="Finish a session and your first badge drops right here."
+                    description="Complete a session to unlock your first badge."
                     action={{ label: "Find a peer", href: "/search" }}
                     className="py-8"
                   />

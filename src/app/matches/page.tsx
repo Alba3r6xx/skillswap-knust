@@ -95,7 +95,7 @@ export default function MatchesPage() {
         {isMutual && (
           <div className="px-4 pt-3 pb-0 flex items-center gap-1.5">
             <Star className="h-3.5 w-3.5 text-gold-500 fill-gold-500" />
-            <span className="text-xs font-semibold text-gold-700 dark:text-gold-400">Perfect Match — you can both teach each other!</span>
+            <span className="text-xs font-semibold text-gold-700 dark:text-gold-400">Perfect match — you can teach each other</span>
           </div>
         )}
         <CardContent className="p-4">
@@ -201,7 +201,7 @@ export default function MatchesPage() {
           <div className="flex items-center justify-between animate-slide-up">
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-white">Your Matches</h1>
-              <p className="text-sm text-navy-300 mt-1">Students who complement your skills</p>
+              <p className="text-sm text-navy-300 mt-1">People who match what you teach and want to learn</p>
             </div>
             {mutual.length > 0 && (
               <span className="text-xs bg-gold-500/20 text-gold-300 px-3 py-1.5 rounded-full font-semibold">
@@ -219,7 +219,7 @@ export default function MatchesPage() {
           <EmptyState
             icon={<Users2 />}
             title="No matches yet"
-            description="Tell us what you know and what you're after — your match is in here somewhere."
+            description="Add your skills and we'll find people who complement you."
             action={{ label: "Update my skills", href: "/profile" }}
             secondaryAction={{ label: "Browse everyone", href: "/search" }}
           />
@@ -239,7 +239,7 @@ export default function MatchesPage() {
                 <EmptyState
                   icon={<Users2 />}
                   title="No mutual matches yet"
-                  description="Mutual means you can both teach each other something. Add more skills to get there."
+                  description="Two-way matches unlock when you both have something to offer. Add more skills."
                   action={{ label: "Add more skills", href: "/profile" }}
                 />
               ) : (
@@ -251,7 +251,7 @@ export default function MatchesPage() {
                 <EmptyState
                   icon={<GraduationCap />}
                   title="No teachers found yet"
-                  description="Add more to your learning list and we'll dig deeper."
+                  description="Add more skills to your learning list to unlock new matches."
                   action={{ label: "Update learning list", href: "/profile" }}
                 />
               ) : (
@@ -263,7 +263,7 @@ export default function MatchesPage() {
                 <EmptyState
                   icon={<BookOpen />}
                   title="No learners found yet"
-                  description="Add what you can teach — someone out there is looking for exactly that."
+                  description="List what you can teach — someone here needs exactly that."
                   action={{ label: "Add what you teach", href: "/profile" }}
                 />
               ) : (

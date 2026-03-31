@@ -104,14 +104,14 @@ export default function LoginPage() {
               Welcome back to<br />your skill network
             </h2>
             <p className="text-navy-300 text-sm leading-relaxed">
-              Your sessions, matches, and messages are waiting. Keep building your academic reputation.
+              Your sessions and matches are waiting.
             </p>
           </div>
           <ul className="space-y-3">
             {[
-              { icon: BookOpen, text: "Resume your pending sessions" },
-              { icon: Zap,      text: "Check your new skill matches" },
-              { icon: Trophy,   text: "Track your XP and rank progress" },
+              { icon: BookOpen, text: "Pick up where you left off" },
+              { icon: Zap,      text: "See who matched with you" },
+              { icon: Trophy,   text: "Check your XP and badges" },
             ].map(({ icon: Icon, text }) => (
               <li key={text} className="flex items-start gap-3 text-sm text-navy-300">
                 <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-lg bg-navy-800 shrink-0">

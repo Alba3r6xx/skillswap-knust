@@ -133,14 +133,14 @@ export default function RegisterPage() {
               The smartest way<br />to learn at KNUST
             </h2>
             <p className="text-navy-300 text-sm leading-relaxed">
-              Trade skills with fellow students. No money, no middleman — just knowledge flowing across every faculty.
+              Swap skills with fellow students. No money, no middleman — just knowledge flowing between faculties.
             </p>
           </div>
           <ul className="space-y-3">
             {[
               { icon: GraduationCap, text: "Teach what you know, learn what you need" },
-              { icon: Users,         text: "Matched by skill, faculty & availability" },
-              { icon: Star,          text: "Rated sessions build your academic reputation" },
+              { icon: Users,         text: "Matched by skill, faculty, and schedule" },
+              { icon: Star,          text: "Earn XP and build your reputation" },
             ].map(({ icon: Icon, text }) => (
               <li key={text} className="flex items-start gap-3 text-sm text-navy-300">
                 <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-lg bg-navy-800 shrink-0">
