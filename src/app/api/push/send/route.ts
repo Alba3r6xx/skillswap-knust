@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
 import { createClient } from "@supabase/supabase-js";
 
-const VAPID_PUBLIC_KEY = "BKbIshU-vonOtfVoQTPlhHRwXvaGFRhy-s3bqhisX8BA7ar2ee9LM8FEfKsqt3qx9oZ4hW989oxbX8eZj2OQ3c8";
+const VAPID_PUBLIC_KEY = "BPxOOBwW0cVBZofcGQPJaRDbnaOQypmDBw3E_a-Pt-_8tXOxzz0fJtlH5A8fqJRtlO5ljbip5dBIoQKpJ8zyuvo";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
