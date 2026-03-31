@@ -96,6 +96,38 @@ export function getTimeSinceLastSeen(lastSeen: string | undefined): string {
   return `${days}d ago`;
 }
 
+/** Increment a user's XP by the given amount */
+export async function awardXP(userId: string, amount: number) {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("xp")
+    .eq("id", userId)
+    .single();
+  const currentXP = (profile as { xp: number } | null)?.xp || 0;
+  await supabase
+    .from("profiles")
+    .update({ xp: currentXP + amount })
+    .eq("id", userId);
+}
+
+/** Recalculate a user's aggregate rating from all their completed sessions */
+export async function recalculateProfileRating(userId: string) {
+  const sessions = await getSessionsByUser(userId);
+  const completed = sessions.filter((s) => s.status === "completed");
+  const ratings: number[] = [];
+  completed.forEach((s) => {
+    if (s.teacher_id === userId && s.learner_rating) ratings.push(s.learner_rating);
+    if (s.learner_id === userId && s.teacher_rating) ratings.push(s.teacher_rating);
+  });
+  if (ratings.length > 0) {
+    const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+    await supabase
+      .from("profiles")
+      .update({ rating: Math.round(avg * 10) / 10, total_ratings: ratings.length })
+      .eq("id", userId);
+  }
+}
+
 // ─── Sessions ───────────────────────────────────────────────
 
 export async function getSessionsByUser(userId: string): Promise<Session[]> {

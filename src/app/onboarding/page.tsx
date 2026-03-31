@@ -153,7 +153,7 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header progress */}
-      <div className="w-full bg-white dark:bg-card border-b px-4 py-3 flex items-center gap-4">
+      <div className="w-full bg-white dark:bg-card border-b px-4 py-3 flex items-center gap-4" style={{ paddingTop: 'max(0.75rem, var(--sat, 0px))' }}>
         <div className="flex items-center gap-2">
           <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
             <Repeat2 className="h-4 w-4 text-white" />

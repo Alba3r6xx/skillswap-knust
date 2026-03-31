@@ -38,6 +38,7 @@ export const XP_REWARDS: Record<string, number> = {
   session_completed: 50,
   session_taught: 75,
   profile_completed: 100,
+  rating_given: 10,
   first_session: 200,
   streak_bonus: 25,
   message_sent: 5,

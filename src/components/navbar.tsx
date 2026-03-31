@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useSidebar } from "@/lib/sidebar-context";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -97,6 +97,17 @@ export default function Navbar() {
 
   const unreadNotifs = notifications.filter((n) => !n.read).length;
 
+  const handleNotifOpen = useCallback(async (open: boolean) => {
+    if (open && user && unreadNotifs > 0) {
+      await supabase
+        .from("notifications")
+        .update({ read: true })
+        .eq("user_id", user.id)
+        .eq("read", false);
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    }
+  }, [user, unreadNotifs]);
+
   const renderNavItem = (item: (typeof NAV_ITEMS)[0]) => {
     const isActive = pathname === item.href;
     const badge =
@@ -186,7 +197,7 @@ export default function Navbar() {
             <div className="h-px bg-navy-800 mx-1 mb-2" />
 
             {/* Notifications */}
-            <Popover>
+            <Popover onOpenChange={handleNotifOpen}>
               <PopoverTrigger asChild>
                 <button
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
@@ -287,7 +298,7 @@ export default function Navbar() {
 
         <div className="flex items-center gap-1">
           {/* Notification bell */}
-          <Popover>
+          <Popover onOpenChange={handleNotifOpen}>
             <PopoverTrigger asChild>
               <button
                 className="relative h-11 w-11 flex items-center justify-center rounded-full

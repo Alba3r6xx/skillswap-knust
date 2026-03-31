@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { getSessionsByUser, updateSession, getProfileById, createNotification } from "@/lib/data";
+import { getSessionsByUser, updateSession, getProfileById, createNotification, awardXP, recalculateProfileRating } from "@/lib/data";
+import { XP_REWARDS } from "@/lib/gamification";
 import { Session, Profile } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -100,6 +101,20 @@ export default function SessionsPage() {
 
   const handleComplete = async (session: Session) => {
     await updateSession(session.id, { status: "completed" });
+    // Award XP to both participants
+    const isTeacher = session.teacher_id === user.id;
+    const otherId = isTeacher ? session.learner_id : session.teacher_id;
+    await Promise.all([
+      awardXP(session.teacher_id, XP_REWARDS.session_taught),
+      awardXP(session.learner_id, XP_REWARDS.session_completed),
+      createNotification({
+        user_id: otherId,
+        type: "session_completed",
+        title: "Session Completed",
+        message: `Your ${session.skill} session has been marked as complete!`,
+        link: "/sessions",
+      }),
+    ]);
     toast.success("Session marked as complete!");
     fetchSessions();
   };
@@ -111,6 +126,10 @@ export default function SessionsPage() {
       ? { teacher_rating: rating, teacher_feedback: feedback }
       : { learner_rating: rating, learner_feedback: feedback };
     await updateSession(selectedSession.id, updates);
+    // Recalculate the rated user's aggregate profile rating
+    const ratedUserId = isTeacher ? selectedSession.learner_id : selectedSession.teacher_id;
+    await recalculateProfileRating(ratedUserId);
+    await awardXP(user.id, XP_REWARDS.rating_given);
     toast.success("Rating submitted!");
     setShowRateDialog(false);
     setRating(0);
@@ -334,7 +353,7 @@ export default function SessionsPage() {
           <TabsContent value="cancelled">
             {cancelled.length === 0 ? (
               <EmptyState
-                icon={<CheckCircle2 />}
+                icon={<XCircle />}
                 title="No cancelled sessions"
                 description="Great — all your sessions are on track!"
                 action={{ label: "Book a session", href: "/search" }}

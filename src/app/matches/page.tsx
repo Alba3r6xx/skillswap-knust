@@ -17,9 +17,7 @@ import {
   GraduationCap,
   BookOpen,
   MessageSquare,
-  Calendar,
   Users2,
-  Search,
 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 
@@ -186,7 +184,7 @@ export default function MatchesPage() {
             </Link>
             <Link href={`/profile/${peer.id}`} className="flex-1">
               <Button size="sm" className="w-full text-xs gap-1">
-                <Calendar className="h-3 w-3" /> View Profile
+                <Star className="h-3 w-3" /> View & Book
               </Button>
             </Link>
           </div>

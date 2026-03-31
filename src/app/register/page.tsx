@@ -198,7 +198,7 @@ export default function RegisterPage() {
           <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full blur-3xl opacity-[0.08]" style={{ background: "oklch(0.769 0.188 70)" }} aria-hidden />
           <div className="absolute -bottom-12 -left-12 w-36 h-36 rounded-full blur-3xl opacity-[0.06]" style={{ background: "oklch(0.68 0.104 232)" }} aria-hidden />
 
-          <div className="relative px-5 pt-5 pb-8">
+          <div className="relative px-5 pb-8" style={{ paddingTop: 'max(1.25rem, var(--sat, 0px))' }}>
             {/* Top row: logo + actions */}
             <div className="flex items-center justify-between mb-6">
               <Link href="/" className="flex items-center gap-2">

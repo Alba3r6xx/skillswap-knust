@@ -20,7 +20,6 @@ import {
   BookOpen,
   Monitor,
   MessageSquare,
-  Calendar,
   X,
   Eye,
   TrendingUp,
@@ -269,7 +268,7 @@ export default function SearchPage() {
                       </Link>
                       <Link href={`/profile/${peer.id}`} className="flex-1">
                         <Button size="sm" className="w-full text-xs gap-1">
-                          <Calendar className="h-3 w-3" /> View Profile
+                          <Star className="h-3 w-3" /> View & Book
                         </Button>
                       </Link>
                     </div>

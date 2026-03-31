@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { getSessionsByUser, getAllProfiles, getMatchScore, computeBadges, getConversations } from "@/lib/data";
+import { getSessionsByUser, getAllProfiles, getMatchScore, getConversations } from "@/lib/data";
 import { Profile, Session } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,6 @@ import {
   Calendar,
   Star,
   TrendingUp,
-  ArrowRight,
   Bell,
   Award,
   Search,
@@ -120,11 +119,9 @@ export default function DashboardPage() {
         counts[d.getDay()]++;
       }
     });
-    const maxCount = Math.max(...counts, 1);
     return days.map((day, i) => ({
       day,
       count: counts[i],
-      height: Math.max((counts[i] / maxCount) * 100, 6),
       isToday: i === now.getDay(),
     }));
   }, [sessions]);

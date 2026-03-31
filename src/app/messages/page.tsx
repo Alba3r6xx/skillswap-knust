@@ -1797,7 +1797,7 @@ function MessagesContent() {
                           autoComplete="off"
                           autoCorrect="on"
                           autoCapitalize="sentences"
-                          enterKeyHint={isTouchDevice.current ? "send" : "enter"}
+                          enterKeyHint="enter"
                           aria-label="Message"
                           placeholder={selectedGroupId ? "Message group..." : "Message"}
                           value={newMessage}

@@ -143,7 +143,7 @@ export default function Home() {
     <div className="min-h-dvh bg-white overflow-x-hidden">
 
       {/* ── NAV ── */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-navy-900/95 backdrop-blur-sm">
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-navy-900/95 backdrop-blur-sm" style={{ paddingTop: 'var(--sat, 0px)' }}>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-500">
@@ -171,7 +171,7 @@ export default function Home() {
       </header>
 
       {/* ── HERO ── */}
-      <section className="relative bg-navy-800 overflow-hidden pt-14">
+      <section className="relative bg-navy-800 overflow-hidden" style={{ paddingTop: 'calc(3.5rem + var(--sat, 0px))' }}>
         {/* Background image — visible on all screens */}
         <div className="absolute inset-0">
           <img
