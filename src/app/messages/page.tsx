@@ -373,7 +373,8 @@ function MessagesContent() {
       supabase.removeChannel(typingChannel);
       typingChannelRef.current = null;
     };
-  }, [selectedPeerId, user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPeerId, user?.id]);
 
   const broadcastTyping = useCallback(() => {
     if (!user || !typingChannelRef.current) return;
@@ -434,11 +435,15 @@ function MessagesContent() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedPeerId, user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPeerId, user?.id]);
 
-  // Scroll to bottom
+  // Scroll to bottom — deferred to avoid forced-reflow violation
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const raf = requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(raf);
   }, [messages]);
 
   // Fetch reactions when messages change
@@ -516,7 +521,8 @@ function MessagesContent() {
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [selectedGroupId, user, fetchGroups]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedGroupId, user?.id, fetchGroups]);
 
   const handleSendGroupMessage = async () => {
     if (!newMessage.trim() || !user || !selectedGroupId || sending) return;

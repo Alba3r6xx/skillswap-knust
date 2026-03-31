@@ -83,7 +83,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        // Invalid/expired refresh token — clear stale tokens so the user
+        // isn't stuck in a broken 400-loop on every page load.
+        await supabase.auth.signOut();
+        setIsLoading(false);
+        return;
+      }
       if (session?.user) {
         setSupabaseUser(session.user);
         await ensureProfile(session.user);
@@ -98,6 +105,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (session?.user) {
             setSupabaseUser(session.user);
             await ensureProfile(session.user);
+          } else {
+            // TOKEN_REFRESHED fired but session is null — token was invalidated
+            await supabase.auth.signOut();
+            setSupabaseUser(null);
+            setUser(null);
           }
         } else if (event === "SIGNED_OUT") {
           setSupabaseUser(null);
