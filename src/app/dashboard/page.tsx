@@ -16,7 +16,6 @@ import {
   BookOpen,
   Calendar,
   Star,
-  TrendingUp,
   Bell,
   Award,
   Search,
@@ -102,7 +101,6 @@ export default function DashboardPage() {
   const upcoming = sessions.filter((s) => s.status === "accepted");
   const completed = sessions.filter((s) => s.status === "completed");
   const pending = sessions.filter((s) => s.status === "pending");
-  const incompleteItems = profileItems.filter((i) => !i.done);
 
   // Weekly activity data for bar chart
   const weeklyActivity = useMemo(() => {
@@ -169,42 +167,7 @@ export default function DashboardPage() {
       {/* ── Content overlapping banner ── */}
       <div className="mx-auto px-4 -mt-10 pb-8 max-w-5xl relative z-10">
 
-        {/* Profile completion nudge */}
-        {profileScore < 100 && (
-          <div className="mb-6 rounded-xl border border-gold-200 bg-gold-50 dark:bg-gold-500/10 dark:border-gold-500/30 p-4 content-fade-in">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="h-4 w-4 text-gold-600 dark:text-gold-400" />
-                  <p className="text-sm font-semibold text-navy-800 dark:text-gold-300">
-                    {profileScore}% complete — finish up for better matches
-                  </p>
-                </div>
-                <div className="h-1.5 rounded-full bg-gold-200 dark:bg-gold-500/30 mb-2 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-700 ease-out"
-                    style={{ width: `${profileScore}%` }}
-                  />
-                </div>
-                <div className="flex flex-wrap gap-x-4 gap-y-1">
-                  {incompleteItems.slice(0, 3).map((item) => (
-                    <span key={item.label} className="text-xs text-gold-700 dark:text-gold-400 flex items-center gap-1">
-                      <span className="h-1 w-1 rounded-full bg-gold-400" />
-                      {item.label} <span className="text-gold-600 font-semibold">+{item.xp} XP</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <Link href="/profile">
-                <Button size="sm" className="shrink-0">
-                  Finish up
-                </Button>
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {/* ── Stats Grid — Gradient cards with trends ── */}
+        {/* ── Stats Grid ── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 stagger-children">
           {[
             {
@@ -244,18 +207,13 @@ export default function DashboardPage() {
               accent: "text-purple-600 dark:text-purple-400",
               isRating: true,
             },
-          ].map(({ label, value, icon: Icon, lightBg, iconColor, accent, isRating }) => (
+          ].map(({ label, value, icon: Icon, lightBg, iconColor, isRating }) => (
             <Card key={label} className="stat-card group">
               <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
+                <div className="mb-3">
                   <div className={`h-9 w-9 rounded-xl ${lightBg} flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110`}>
                     <Icon className={`h-4.5 w-4.5 ${iconColor}`} />
                   </div>
-                  {!isRating && value > 0 && (
-                    <span className={`text-[10px] font-bold ${accent} bg-current/10 px-1.5 py-0.5 rounded-full flex items-center gap-0.5`}>
-                      <TrendingUp className="h-2.5 w-2.5" /> Active
-                    </span>
-                  )}
                 </div>
                 <p className="text-3xl font-bold font-display tracking-tight leading-none mb-0.5">
                   {isRating ? (

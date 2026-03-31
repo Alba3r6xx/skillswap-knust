@@ -83,6 +83,33 @@ export function computeSwapStreak(sessions: Session[], userId: string): number {
   return streak;
 }
 
+/** Consecutive-week streak between two specific users */
+export function computePeerStreak(sessions: Session[], userA: string, userB: string): number {
+  const completed = sessions.filter(
+    (s) =>
+      s.status === "completed" &&
+      ((s.teacher_id === userA && s.learner_id === userB) ||
+       (s.teacher_id === userB && s.learner_id === userA))
+  );
+  if (completed.length === 0) return 0;
+
+  const weeks = new Set<string>();
+  completed.forEach((s) => weeks.add(getISOWeek(new Date(s.created_at))));
+
+  let streak = 0;
+  const checkDate = new Date();
+  while (true) {
+    if (weeks.has(getISOWeek(checkDate))) {
+      streak++;
+      checkDate.setDate(checkDate.getDate() - 7);
+    } else {
+      break;
+    }
+    if (streak > 52) break;
+  }
+  return streak;
+}
+
 // ─── PROFILE COMPLETION ──────────────────────────────────────
 
 export interface CompletionItem {

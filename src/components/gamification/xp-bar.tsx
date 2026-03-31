@@ -34,30 +34,33 @@ export function XPBar({ xp, compact = false, className }: XPBarProps) {
     );
   }
 
+  const circumference = 2 * Math.PI * 18;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+
   return (
     <div className={cn("rounded-xl bg-card p-4 shadow-[0_1px_4px_0_oklch(0_0_0/0.08)]", className)}>
-      <div className="flex items-center gap-3 mb-3">
-        <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center", tier.bg)}>
-          <span className="text-xl leading-none">{tier.icon}</span>
+      <div className="flex items-center gap-3">
+        <div className="relative h-12 w-12 shrink-0">
+          <svg className="h-12 w-12 -rotate-90" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="18" fill="none" stroke="currentColor" strokeWidth="3" className="text-border" />
+            <circle cx="22" cy="22" r="18" fill="none" strokeWidth="3" strokeLinecap="round"
+              className="text-gold-500 transition-all duration-700"
+              style={{ strokeDasharray: circumference, strokeDashoffset }} />
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center text-base leading-none">{tier.icon}</span>
         </div>
-        <div>
-          <p className={cn("font-semibold text-sm", tier.color)}>{tier.name}</p>
-          <p className="text-xs text-muted-foreground">{xp.toLocaleString()} XP total</p>
-        </div>
-        {next && (
-          <div className="ml-auto text-right">
-            <p className="text-xs text-muted-foreground">{next - xp} XP to next</p>
-            <p className="text-xs font-medium text-gold-600">{getXPTier(next).name}</p>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className={cn("font-bold text-sm", tier.color)}>{tier.name}</p>
+            <span className="text-[10px] font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">{xp} XP</span>
           </div>
-        )}
+          {next ? (
+            <p className="text-xs text-muted-foreground mt-0.5">{next - xp} XP to {getXPTier(next).name}</p>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-0.5">Max level reached</p>
+          )}
+        </div>
       </div>
-      <div className="h-2 rounded-full bg-border overflow-hidden">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-gold-400 to-gold-500 transition-all duration-700"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-      <p className="text-xs text-muted-foreground mt-1.5">{progress}% to {next ? getXPTier(next).name : "max level"}</p>
     </div>
   );
 }

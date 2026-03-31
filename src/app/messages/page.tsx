@@ -4,8 +4,10 @@ import { Suspense, useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { getConversations, getMessagesBetween, sendMessage, markMessagesAsRead, getProfileById, deleteMessage, togglePinMessage, editMessage, forwardMessage, addReaction, removeReaction, getReactionsForMessages, searchMessages, updateLastSeen, getTimeSinceLastSeen, createGroup, getGroupsForUser, getGroupMessages, sendGroupMessage, getGroupMembers, leaveGroup, deleteGroupMessage, editGroupMessage } from "@/lib/data";
-import { Message, Profile, Reaction, Group, GroupMember, GroupMessage } from "@/lib/types";
+import { getConversations, getMessagesBetween, sendMessage, markMessagesAsRead, getProfileById, deleteMessage, togglePinMessage, editMessage, forwardMessage, addReaction, removeReaction, getReactionsForMessages, searchMessages, updateLastSeen, getTimeSinceLastSeen, createGroup, getGroupsForUser, getGroupMessages, sendGroupMessage, getGroupMembers, leaveGroup, deleteGroupMessage, editGroupMessage, getSessionsByUser } from "@/lib/data";
+import { Message, Profile, Reaction, Group, GroupMember, GroupMessage, Session } from "@/lib/types";
+import { computePeerStreak } from "@/lib/gamification";
+import { StreakAvatar } from "@/components/gamification/streak-avatar";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -242,6 +244,7 @@ function MessagesContent() {
   const [selectedPeerId, setSelectedPeerId] = useState<string | null>(initialPeer);
   const [peerProfiles, setPeerProfiles] = useState<Record<string, Profile>>({});
   const [messages, setMessages] = useState<Message[]>([]);
+  const [allSessions, setAllSessions] = useState<Session[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -316,11 +319,15 @@ function MessagesContent() {
     if (!isLoading && !user) router.push("/login");
   }, [isLoading, user, router]);
 
-  // Fetch conversations
+  // Fetch conversations + sessions (for streak rings)
   const fetchConversations = useCallback(async () => {
     if (!user) return;
-    const convos = await getConversations(user.id);
+    const [convos, sess] = await Promise.all([
+      getConversations(user.id),
+      getSessionsByUser(user.id),
+    ]);
     setConversations(convos);
+    setAllSessions(sess);
 
     const profiles: Record<string, Profile> = { ...peerProfiles };
     const profilesToFetch: string[] = [];
@@ -1043,15 +1050,7 @@ function MessagesContent() {
                       }`}
                       onClick={() => setSelectedPeerId(initialPeer)}
                     >
-                      <Avatar className="h-10 w-10 shrink-0">
-                        {peerProfiles[initialPeer].avatar_url ? (
-                          <img src={peerProfiles[initialPeer].avatar_url} alt="" className="h-full w-full object-cover rounded-full" />
-                        ) : (
-                          <AvatarFallback className="bg-gold-100 text-navy-800 text-sm font-semibold">
-                            {peerProfiles[initialPeer].name.split(" ").map((n) => n[0]).join("").toUpperCase()}
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
+                      <StreakAvatar streak={computePeerStreak(allSessions, user.id, initialPeer)} avatarUrl={peerProfiles[initialPeer].avatar_url} name={peerProfiles[initialPeer].name} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{peerProfiles[initialPeer].name}</p>
                         <p className="text-xs text-muted-foreground">Start a conversation</p>
@@ -1061,9 +1060,9 @@ function MessagesContent() {
                   {conversations.map((conv) => {
                     const peer = peerProfiles[conv.peerId];
                     if (!peer) return null;
-                    const initials = peer.name.split(" ").map((n) => n[0]).join("").toUpperCase();
                     const isActive = selectedPeerId === conv.peerId;
                     const isMineLastMsg = conv.lastMessage.sender_id === user.id;
+                    const peerStreak = computePeerStreak(allSessions, user.id, conv.peerId);
                     return (
                       <button
                         key={conv.peerId}
@@ -1072,15 +1071,7 @@ function MessagesContent() {
                         }`}
                         onClick={() => { setSelectedPeerId(conv.peerId); setSelectedGroupId(null); }}
                       >
-                        <Avatar className="h-10 w-10 shrink-0">
-                          {peer.avatar_url ? (
-                            <img src={peer.avatar_url} alt={peer.name} className="h-full w-full object-cover rounded-full" />
-                          ) : (
-                            <AvatarFallback className="bg-gold-100 text-navy-800 text-sm font-semibold">
-                              {initials}
-                            </AvatarFallback>
-                          )}
-                        </Avatar>
+                        <StreakAvatar streak={peerStreak} avatarUrl={peer.avatar_url} name={peer.name} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-medium truncate">{peer.name}</p>
@@ -1206,20 +1197,11 @@ function MessagesContent() {
                   {/* DM header */}
                   {selectedPeer && selectedPeerId && (
                     <Link href={`/profile/${selectedPeerId}`} className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <div className="relative shrink-0">
-                        <Avatar className="h-9 w-9">
-                          {selectedPeer.avatar_url ? (
-                            <img src={selectedPeer.avatar_url} alt={selectedPeer.name} className="h-full w-full object-cover rounded-full" />
-                          ) : (
-                            <AvatarFallback className="bg-gold-100 text-navy-800 text-sm">
-                              {selectedPeer.name.split(" ").map((n) => n[0]).join("").toUpperCase()}
-                            </AvatarFallback>
-                          )}
-                        </Avatar>
+                      <StreakAvatar streak={computePeerStreak(allSessions, user.id, selectedPeerId)} avatarUrl={selectedPeer.avatar_url} name={selectedPeer.name} size="sm">
                         {getTimeSinceLastSeen(selectedPeer.last_seen) === "Online now" && (
                           <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-background" />
                         )}
-                      </div>
+                      </StreakAvatar>
                       <div className="min-w-0">
                         <p className="text-sm font-semibold truncate">{selectedPeer.name}</p>
                         {peerTyping ? (
