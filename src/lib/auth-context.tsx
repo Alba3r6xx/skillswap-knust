@@ -85,9 +85,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const init = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
-        // Invalid/expired refresh token — clear stale tokens so the user
-        // isn't stuck in a broken 400-loop on every page load.
-        await supabase.auth.signOut();
+        // Invalid/expired refresh token — wipe local storage only.
+        // scope:'local' avoids a second API call with the already-invalid token.
+        try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* ignore */ }
         setIsLoading(false);
         return;
       }
@@ -107,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await ensureProfile(session.user);
           } else {
             // TOKEN_REFRESHED fired but session is null — token was invalidated
-            await supabase.auth.signOut();
+            try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* ignore */ }
             setSupabaseUser(null);
             setUser(null);
           }
