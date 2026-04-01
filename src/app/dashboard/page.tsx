@@ -72,7 +72,8 @@ export default function DashboardPage() {
       setLoading(false);
     };
     fetchData();
-  }, [user, isLoading, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, isLoading, router]);
 
   const streak = user ? computeSwapStreak(sessions, user.id) : 0;
   const { score: profileScore } = user ? getProfileCompletion(user) : { score: 0 };
