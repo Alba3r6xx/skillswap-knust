@@ -247,6 +247,7 @@ function MessagesContent() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedPeerId, setSelectedPeerId] = useState<string | null>(initialPeer);
   const [peerProfiles, setPeerProfiles] = useState<Record<string, Profile>>({});
+  const peerProfilesRef = useRef<Record<string, Profile>>({});
   const [messages, setMessages] = useState<Message[]>([]);
   const [allSessions, setAllSessions] = useState<Session[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -333,19 +334,30 @@ function MessagesContent() {
     setConversations(convos);
     setAllSessions(sess);
 
-    const profiles: Record<string, Profile> = { ...peerProfiles };
-    const profilesToFetch: string[] = [];
-    for (const c of convos) {
-      if (!profiles[c.peerId]) profilesToFetch.push(c.peerId);
+    // Batch-fetch all missing peer profiles in one query instead of N requests
+    const knownIds = Object.keys(peerProfilesRef.current);
+    const missing = [
+      ...convos.map((c) => c.peerId),
+      ...(initialPeer ? [initialPeer] : []),
+    ].filter((id) => !knownIds.includes(id));
+    const uniqueMissing = [...new Set(missing)];
+
+    if (uniqueMissing.length > 0) {
+      const { data: fetched } = await supabase
+        .from("profiles")
+        .select("*")
+        .in("id", uniqueMissing);
+      if (fetched) {
+        const next = { ...peerProfilesRef.current };
+        (fetched as Profile[]).forEach((p) => { next[p.id] = p; });
+        peerProfilesRef.current = next;
+        setPeerProfiles(next);
+      }
     }
-    if (initialPeer && !profiles[initialPeer]) profilesToFetch.push(initialPeer);
 
-    const fetched = await Promise.all(profilesToFetch.map((id) => getProfileById(id)));
-    fetched.forEach((p) => { if (p) profiles[p.id] = p; });
-
-    setPeerProfiles(profiles);
     setLoading(false);
-  }, [user, initialPeer]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, initialPeer]);
 
   useEffect(() => {
     fetchConversations();

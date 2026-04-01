@@ -165,12 +165,14 @@ export async function getConversations(userId: string) {
       .from("messages")
       .select("*")
       .eq("sender_id", userId)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(200),
     supabase
       .from("messages")
       .select("*")
       .eq("receiver_id", userId)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(200),
   ]);
 
   const all = [...(sent || []), ...(received || [])] as Message[];
@@ -403,10 +405,16 @@ export async function createGroup(
 }
 
 export async function getGroupsForUser(userId: string): Promise<Group[]> {
+  const { data: memberships } = await supabase
+    .from("group_members")
+    .select("group_id")
+    .eq("user_id", userId);
+  if (!memberships || memberships.length === 0) return [];
+  const groupIds = memberships.map((m) => m.group_id);
   const { data } = await supabase
     .from("groups")
-    .select("*, group_members!inner(user_id)")
-    .eq("group_members.user_id", userId);
+    .select("*")
+    .in("id", groupIds);
   return (data as Group[]) || [];
 }
 
