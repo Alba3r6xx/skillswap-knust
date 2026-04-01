@@ -283,7 +283,7 @@ do $$ begin
   if not exists (select 1 from pg_policies where tablename='group_members' and policyname='Group members can view membership') then
     create policy "Group members can view membership"
       on public.group_members for select using (
-        exists (select 1 from public.group_members gm2 where gm2.group_id = group_id and gm2.user_id = auth.uid())
+        auth.role() = 'authenticated'
       );
   end if;
   if not exists (select 1 from pg_policies where tablename='group_members' and policyname='Group admins can manage members') then

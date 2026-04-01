@@ -204,8 +204,9 @@ export async function getMessagesBetween(userId: string, peerId: string): Promis
     .or(
       `and(sender_id.eq.${userId},receiver_id.eq.${peerId}),and(sender_id.eq.${peerId},receiver_id.eq.${userId})`
     )
-    .order("created_at", { ascending: true });
-  return (data as Message[]) || [];
+    .order("created_at", { ascending: false })
+    .limit(100);
+  return ((data as Message[]) || []).reverse();
 }
 
 export async function sendMessage(msg: { sender_id: string; receiver_id: string; content: string; type?: string; reply_to?: string; reply_preview?: string; reply_sender_id?: string }) {
@@ -423,8 +424,9 @@ export async function getGroupMessages(groupId: string): Promise<GroupMessage[]>
     .from("group_messages")
     .select("*")
     .eq("group_id", groupId)
-    .order("created_at", { ascending: true });
-  return (data as GroupMessage[]) || [];
+    .order("created_at", { ascending: false })
+    .limit(100);
+  return ((data as GroupMessage[]) || []).reverse();
 }
 
 export async function sendGroupMessage(msg: {
