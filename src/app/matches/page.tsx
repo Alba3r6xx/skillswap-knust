@@ -63,7 +63,8 @@ export default function MatchesPage() {
       setLoading(false);
     };
     fetchMatches();
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   if (isLoading || !user) {
     return (

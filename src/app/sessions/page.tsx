@@ -68,7 +68,7 @@ export default function SessionsPage() {
   useEffect(() => {
     fetchSessions();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user?.id]);
 
   if (isLoading || !user) {
     return (

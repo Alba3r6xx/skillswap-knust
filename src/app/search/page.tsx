@@ -53,7 +53,8 @@ export default function SearchPage() {
     };
     const timer = setTimeout(fetch, 300);
     return () => clearTimeout(timer);
-  }, [query, faculty, mode, category, level, user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, faculty, mode, category, level, user?.id]);
 
   if (isLoading || !user) {
     return (

@@ -482,7 +482,8 @@ function MessagesContent() {
       markMessagesAsDelivered(user.id);
     }, 60000);
     return () => clearInterval(interval);
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // ── Group effects ────────────────────────────────────────────
   const fetchGroups = useCallback(async () => {
@@ -497,7 +498,8 @@ function MessagesContent() {
       })
     );
     setGroupLastMsgs(lastMsgsMap);
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   useEffect(() => { fetchGroups(); }, [fetchGroups]);
 
