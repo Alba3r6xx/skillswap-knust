@@ -89,7 +89,7 @@ export default function DashboardPage() {
     const counts = Array(7).fill(0);
     sessions.forEach((s) => {
       const d = new Date(s.date);
-      if (d >= weekStart) {
+      if (d >= weekStart && d <= now) {
         counts[d.getDay()]++;
       }
     });

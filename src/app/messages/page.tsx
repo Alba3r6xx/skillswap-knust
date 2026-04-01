@@ -327,35 +327,37 @@ function MessagesContent() {
   // Fetch conversations + sessions (for streak rings)
   const fetchConversations = useCallback(async () => {
     if (!user) return;
-    const [convos, sess] = await Promise.all([
-      getConversations(user.id),
-      getSessionsByUser(user.id),
-    ]);
-    setConversations(convos);
-    setAllSessions(sess);
+    try {
+      const [convos, sess] = await Promise.all([
+        getConversations(user.id),
+        getSessionsByUser(user.id),
+      ]);
+      setConversations(convos);
+      setAllSessions(sess);
 
-    // Batch-fetch all missing peer profiles in one query instead of N requests
-    const knownIds = Object.keys(peerProfilesRef.current);
-    const missing = [
-      ...convos.map((c) => c.peerId),
-      ...(initialPeer ? [initialPeer] : []),
-    ].filter((id) => !knownIds.includes(id));
-    const uniqueMissing = [...new Set(missing)];
+      // Batch-fetch all missing peer profiles in one query instead of N requests
+      const knownIds = Object.keys(peerProfilesRef.current);
+      const missing = [
+        ...convos.map((c) => c.peerId),
+        ...(initialPeer ? [initialPeer] : []),
+      ].filter((id) => !knownIds.includes(id));
+      const uniqueMissing = [...new Set(missing)];
 
-    if (uniqueMissing.length > 0) {
-      const { data: fetched } = await supabase
-        .from("profiles")
-        .select("*")
-        .in("id", uniqueMissing);
-      if (fetched) {
-        const next = { ...peerProfilesRef.current };
-        (fetched as Profile[]).forEach((p) => { next[p.id] = p; });
-        peerProfilesRef.current = next;
-        setPeerProfiles(next);
+      if (uniqueMissing.length > 0) {
+        const { data: fetched } = await supabase
+          .from("profiles")
+          .select("*")
+          .in("id", uniqueMissing);
+        if (fetched) {
+          const next = { ...peerProfilesRef.current };
+          (fetched as Profile[]).forEach((p) => { next[p.id] = p; });
+          peerProfilesRef.current = next;
+          setPeerProfiles(next);
+        }
       }
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, initialPeer]);
 
@@ -488,16 +490,18 @@ function MessagesContent() {
   // ── Group effects ────────────────────────────────────────────
   const fetchGroups = useCallback(async () => {
     if (!user) return;
-    const gs = await getGroupsForUser(user.id);
-    setGroups(gs);
-    const lastMsgsMap: Record<string, GroupMessage> = {};
-    await Promise.all(
-      gs.map(async (g) => {
-        const msgs = await getGroupMessages(g.id);
-        if (msgs.length > 0) lastMsgsMap[g.id] = msgs[msgs.length - 1];
-      })
-    );
-    setGroupLastMsgs(lastMsgsMap);
+    try {
+      const gs = await getGroupsForUser(user.id);
+      setGroups(gs);
+      const lastMsgsMap: Record<string, GroupMessage> = {};
+      await Promise.all(
+        gs.map(async (g) => {
+          const msgs = await getGroupMessages(g.id);
+          if (msgs.length > 0) lastMsgsMap[g.id] = msgs[msgs.length - 1];
+        })
+      );
+      setGroupLastMsgs(lastMsgsMap);
+    } catch { /* groups fail silently — page still loads */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
