@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { supabase } from "@/lib/supabase";
 import { Profile } from "@/lib/types";
 import { markMessagesAsDelivered } from "@/lib/data";
-import type { Session as SupabaseSession, User as SupabaseUser } from "@supabase/supabase-js";
+import type { AuthChangeEvent, Session as SupabaseSession, User as SupabaseUser } from "@supabase/supabase-js";
 
 interface AuthContextType {
   user: Profile | null;
@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     init();
 
-    const handleAuthChange = async (event: string, session: SupabaseSession | null) => {
+    const handleAuthChange = async (event: AuthChangeEvent, session: SupabaseSession | null) => {
       try {
         if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
           if (session?.user) {
