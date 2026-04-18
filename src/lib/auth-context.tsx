@@ -83,24 +83,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const init = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        // Invalid/expired refresh token — wipe local storage only.
-        // scope:'local' avoids a second API call with the already-invalid token.
-        try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* ignore */ }
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          // Invalid/expired refresh token — wipe local storage only.
+          // scope:'local' avoids a second API call with the already-invalid token.
+          try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* ignore */ }
+          setSupabaseUser(null);
+          setUser(null);
+          setIsLoading(false);
+          return;
+        }
+        if (session?.user) {
+          setSupabaseUser(session.user);
+          await ensureProfile(session.user);
+        } else {
+          setSupabaseUser(null);
+          setUser(null);
+        }
         setIsLoading(false);
-        return;
+      } catch {
+        // Handles corrupted persisted auth state (commonly from stale browser storage).
+        try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* ignore */ }
+        setSupabaseUser(null);
+        setUser(null);
+        setIsLoading(false);
       }
-      if (session?.user) {
-        setSupabaseUser(session.user);
-        await ensureProfile(session.user);
-      }
-      setIsLoading(false);
     };
     init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+    const handleAuthChange = async (event: string, session: Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]) => {
+      try {
         if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
           if (session?.user) {
             setSupabaseUser(session.user);
@@ -115,7 +128,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSupabaseUser(null);
           setUser(null);
         }
+      } catch {
+        try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* ignore */ }
+        setSupabaseUser(null);
+        setUser(null);
+      } finally {
         setIsLoading(false);
+      }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        void handleAuthChange(event, session);
       }
     );
 
