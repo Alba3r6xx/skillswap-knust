@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { supabase } from "@/lib/supabase";
 import { Profile } from "@/lib/types";
 import { markMessagesAsDelivered } from "@/lib/data";
-import type { User as SupabaseUser } from "@supabase/supabase-js";
+import type { Session as SupabaseSession, User as SupabaseUser } from "@supabase/supabase-js";
 
 interface AuthContextType {
   user: Profile | null;
@@ -104,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
       } catch {
         // Handles corrupted persisted auth state (commonly from stale browser storage).
+        console.error("[AuthProvider:init] failed to load session. Clearing local auth state.");
         try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* ignore */ }
         setSupabaseUser(null);
         setUser(null);
@@ -112,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     init();
 
-    const handleAuthChange = async (event: string, session: Awaited<ReturnType<typeof supabase.auth.getSession>>["data"]["session"]) => {
+    const handleAuthChange = async (event: string, session: SupabaseSession | null) => {
       try {
         if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
           if (session?.user) {
@@ -129,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
         }
       } catch {
+        console.error(`[AuthProvider:onAuthStateChange] failed during ${event}. Clearing local auth state.`);
         try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* ignore */ }
         setSupabaseUser(null);
         setUser(null);
