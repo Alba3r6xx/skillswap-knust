@@ -102,9 +102,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
         }
         setIsLoading(false);
-      } catch {
+      } catch (error) {
         // Handles corrupted persisted auth state (commonly from stale browser storage).
-        console.error("[AuthProvider:init] failed to load session. Clearing local auth state.");
+        console.error("[AuthProvider:init] failed to load session. Clearing local auth state.", error);
         try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* ignore */ }
         setSupabaseUser(null);
         setUser(null);
@@ -129,8 +129,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSupabaseUser(null);
           setUser(null);
         }
-      } catch {
-        console.error(`[AuthProvider:onAuthStateChange] failed during ${event}. Clearing local auth state.`);
+      } catch (error) {
+        console.error(`[AuthProvider:onAuthStateChange] failed during ${event}. Clearing local auth state.`, error);
         try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* ignore */ }
         setSupabaseUser(null);
         setUser(null);
