@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { Profile } from "@/lib/types";
 import { markMessagesAsDelivered } from "@/lib/data";
@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Profile | null>(null);
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const initCompletedRef = useRef(false);
 
   const buildProfileSeed = (
     authUser: SupabaseUser,
@@ -91,7 +92,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* ignore */ }
           setSupabaseUser(null);
           setUser(null);
-          setIsLoading(false);
           return;
         }
         if (session?.user) {
@@ -101,13 +101,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSupabaseUser(null);
           setUser(null);
         }
-        setIsLoading(false);
       } catch (error) {
         // Handles corrupted persisted auth state (commonly from stale browser storage).
         console.error("[AuthProvider:init] failed to load session. Clearing local auth state.", error);
         try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* ignore */ }
         setSupabaseUser(null);
         setUser(null);
+      } finally {
+        initCompletedRef.current = true;
         setIsLoading(false);
       }
     };
@@ -135,13 +136,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSupabaseUser(null);
         setUser(null);
       } finally {
-        setIsLoading(false);
+        if (initCompletedRef.current) {
+          setIsLoading(false);
+        }
       }
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        void handleAuthChange(event, session);
+        handleAuthChange(event, session).catch((error) => {
+          console.error("[AuthProvider] Unhandled auth change error:", error);
+        });
       }
     );
 
